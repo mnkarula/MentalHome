@@ -6,27 +6,26 @@
     <title>春郁之秋</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             background: linear-gradient(to bottom, #e0eafc, #cfdef3);
             color: #333;
+            overflow: hidden;
         }
 
         .player-container {
-            background-color: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-            padding: 25px 20px;
-            margin: 30px 15px;
-            width: 90%;
-            max-width: 450px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 375px;
+            padding: 20px;
             box-sizing: border-box;
         }
 
@@ -35,14 +34,16 @@
         }
 
         .cover-art {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
+            width: 250px;
+            height: 250px;
+            border-radius: 20px;
             object-fit: cover;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            display: block;
-            margin: 0 auto 15px auto;
-            border: 3px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .cover-art.playing {
+            animation: rotate 10s linear infinite;
         }
 
         @keyframes rotate {
@@ -50,34 +51,65 @@
             to { transform: rotate(360deg); }
         }
 
-        .cover-art.playing {
-            animation: rotate 10s linear infinite;
-        }
-
         .music-title {
-            font-size: 1.6em;
+            font-size: 1.8em;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin: 15px 0;
             color: #2c3e50;
+            text-align: center;
         }
 
-        audio {
+        .audio-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .audio-controls button {
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: #333;
+            margin: 0 15px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .audio-controls button:hover {
+            color: #007aff;
+        }
+
+        .progress-bar {
             width: 100%;
-            margin-top: 10px;
-            outline: none;
+            height: 5px;
+            background: #ddd;
+            margin-top: 20px;
+            position: relative;
+            border-radius: 5px;
+        }
+
+        .progress {
+            height: 100%;
+            width: 0;
+            background: #007aff;
+            border-radius: 5px;
+            transition: width 0.1s linear;
         }
 
         .poem-area {
             margin-top: 30px;
             padding: 20px;
-            background-color: rgba(255, 255, 255, 0.6);
-            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
             text-align: left;
             line-height: 1.7;
             color: #444;
             font-size: 1em;
-            max-height: 40vh;
+            max-height: 30vh;
             overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .poem-area h2 {
@@ -91,21 +123,6 @@
         .poem-area p {
             margin-bottom: 1em;
         }
-
-        .poem-area::-webkit-scrollbar {
-            width: 5px;
-        }
-        .poem-area::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.05);
-            border-radius: 10px;
-        }
-        .poem-area::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-        .poem-area::-webkit-scrollbar-thumb:hover {
-            background: rgba(0,0,0,0.4);
-        }
     </style>
 </head>
 <body>
@@ -114,9 +131,12 @@
             <img src="cover.png" alt="专辑封面" class="cover-art" id="coverArt">
         </div>
         <h1 class="music-title">春郁之秋</h1>
-        <audio id="audioPlayer" controls src="Fur_Alina.flac">
-            您的浏览器不支持播放此音频格式。
-        </audio>
+        <div class="audio-controls">
+            <button id="playPauseBtn">▶️</button>
+        </div>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
     </div>
 
     <div class="poem-area">
@@ -125,13 +145,12 @@
             我看见它盘旋在那里，<br>
             每个生命消亡的背后。<br>
             都有它的影子。<br>
-            是记忆，还是未竟的诗篇？
         </p>
         <p>
             有人说那是天堂，<br>
             有人说那是地府，。<br>
             也有人说，那里空无一物，<br>
-            只有永恒的沉寂。
+            只有永恒的孤寂。
         </p>
         <p>
             我游离于它们之间，<br>
@@ -141,23 +160,36 @@
         </p>
     </div>
 
+    <audio id="audioPlayer" src="Fur_Alina.flac"></audio>
+
     <script>
         const audioPlayer = document.getElementById('audioPlayer');
         const coverArt = document.getElementById('coverArt');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const progress = document.getElementById('progress');
 
-        if (audioPlayer && coverArt) {
-            audioPlayer.addEventListener('play', () => {
+        playPauseBtn.addEventListener('click', () => {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                playPauseBtn.textContent = '⏸️';
                 coverArt.classList.add('playing');
-            });
-            audioPlayer.addEventListener('pause', () => {
+            } else {
+                audioPlayer.pause();
+                playPauseBtn.textContent = '▶️';
                 coverArt.classList.remove('playing');
-            });
-            audioPlayer.addEventListener('ended', () => {
-                coverArt.classList.remove('playing');
-            });
-        } else {
-            console.error("播放器或封面元素未找到！");
-        }
+            }
+        });
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            const percentage = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progress.style.width = `${percentage}%`;
+        });
+
+        audioPlayer.addEventListener('ended', () => {
+            playPauseBtn.textContent = '▶️';
+            coverArt.classList.remove('playing');
+            progress.style.width = '0%';
+        });
     </script>
 </body>
 </html>

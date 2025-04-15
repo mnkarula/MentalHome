@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 让页面在手机上自适应宽度 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>听音乐</title>
+    <style>
+        /* 简单的样式，让播放器居中，适合手机屏幕 */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh; /* 接近屏幕高度 */
+            background-color: #f0f0f0; /* 淡灰色背景 */
+            margin: 0;
+            padding: 15px; /* 页面边缘留白 */
+            box-sizing: border-box;
+        }
+        audio {
+            width: 100%; /* 宽度占满容器 */
+            max-width: 500px; /* 最大宽度限制 */
+            display: block; /* 块级元素，使其能应用 margin auto (虽然flex布局使其非必需) */
+            margin: 20px auto; /* 上下边距，左右自动（在flex下作用有限，但无害） */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* 加点阴影 */
+            border-radius: 5px; /* 轻微圆角 */
+        }
+        /* 可以加个小标题 */
+         h1 {
+             text-align: center;
+             color: #333;
+             position: absolute; /* 绝对定位到顶部 */
+             top: 30px; /* 距离顶部距离 */
+             width: 100%;
+             font-size: 1.5em;
+         }
+    </style>
+</head>
+<body>
+    <h1>春郁之秋</h1>
+
+    <!-- controls: 显示播放控件 -->
+    <!-- src: 指定音乐文件的路径。因为HTML和音乐在同一文件夹，直接写文件名 -->
+    <audio controls src="Für_Alina.flac">
+        <!-- 如果浏览器不支持audio标签或指定的音频格式，会显示这段文字 -->
+        您的浏览器不支持播放此音频格式，请尝试更换浏览器或设备。
+        <!-- 如果你用了MP3，就把 src="my_song.flac" 改成 src="my_song.mp3" -->
+        <!-- 如果你想同时提供 FLAC 和 MP3，让浏览器自己选，可以这样写：
+        <audio controls>
+          <source src="my_song.flac" type="audio/flac">
+          <source src="my_song.mp3" type="audio/mpeg">
+          您的浏览器不支持播放此音频格式。
+        </audio>
+        这样浏览器会优先尝试加载第一个 source，如果不支持，再尝试下一个。你需要同时上传 my_song.flac 和 my_song.mp3。
+        -->
+    </audio>
+
+</body>
+</html>

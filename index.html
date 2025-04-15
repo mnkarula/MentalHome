@@ -2,58 +2,197 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 让页面在手机上自适应宽度 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>听音乐</title>
+    <title>春郁之秋</title> {/* 你可以修改这里的页面标题 */}
     <style>
-        /* 简单的样式，让播放器居中，适合手机屏幕 */
+        /* 基础样式和页面布局 */
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 90vh; /* 接近屏幕高度 */
-            background-color: #f0f0f0; /* 淡灰色背景 */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             margin: 0;
-            padding: 15px; /* 页面边缘留白 */
+            padding: 0;
+            display: flex;
+            flex-direction: column; /* 让内容垂直排列 */
+            align-items: center; /* 水平居中 */
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #e0eafc, #cfdef3); /* 淡雅的渐变背景 */
+            color: #333;
+        }
+
+        /* 播放器容器 */
+        .player-container {
+            background-color: rgba(255, 255, 255, 0.8); /* 半透明白色背景 */
+            backdrop-filter: blur(10px); /* 毛玻璃效果 (部分浏览器支持) */
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            padding: 25px 20px;
+            margin: 30px 15px; /* 上下边距，左右自动适配 */
+            width: 90%;
+            max-width: 450px; /* 限制最大宽度 */
+            text-align: center;
             box-sizing: border-box;
         }
-        audio {
-            width: 100%; /* 宽度占满容器 */
-            max-width: 500px; /* 最大宽度限制 */
-            display: block; /* 块级元素，使其能应用 margin auto (虽然flex布局使其非必需) */
-            margin: 20px auto; /* 上下边距，左右自动（在flex下作用有限，但无害） */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* 加点阴影 */
-            border-radius: 5px; /* 轻微圆角 */
+
+        /* 封面区域 */
+        .cover-area {
+            margin-bottom: 20px;
+            position: relative; /* 用于可能的未来扩展 */
         }
-        /* 可以加个小标题 */
-         h1 {
-             text-align: center;
-             color: #333;
-             position: absolute; /* 绝对定位到顶部 */
-             top: 30px; /* 距离顶部距离 */
-             width: 100%;
-             font-size: 1.5em;
-         }
+
+        /* 封面图片样式 */
+        .cover-art {
+            width: 180px; /* 封面大小 */
+            height: 180px;
+            border-radius: 50%; /* 圆形封面 */
+            object-fit: cover; /* 图片填满不变形 */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: block;
+            margin: 0 auto 15px auto; /* 居中并添加下方间距 */
+            border: 3px solid rgba(255, 255, 255, 0.5); /* 加一点白色边框 */
+        }
+
+        /* 封面旋转动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 当音乐播放时，给封面添加旋转动画 */
+        .cover-art.playing {
+            animation: rotate 10s linear infinite; /* 10秒一圈，无限循环 */
+        }
+
+        /* 音乐标题 */
+        .music-title {
+            font-size: 1.6em; /* 稍大字体 */
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50; /* 深蓝灰色 */
+        }
+
+        /* 默认的音频播放器控件 */
+        audio {
+            width: 100%; /* 占据容器宽度 */
+            margin-top: 10px; /* 与上方元素间距 */
+            outline: none; /* 去掉可能的轮廓 */
+        }
+        /* 可以稍微美化一下控制条 (效果有限且跨浏览器不一致) */
+        audio::-webkit-media-controls-panel {
+          background-color: rgba(255, 255, 255, 0.6);
+          border-radius: 5px;
+        }
+
+
+        /* 诗歌/文字显示区域 */
+        .poem-area {
+            margin-top: 30px; /* 与播放器间距 */
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.6); /* 轻微背景 */
+            border-radius: 10px;
+            text-align: left; /* 文字左对齐 */
+            line-height: 1.7; /* 增加行高，易于阅读 */
+            color: #444;
+            font-size: 1em; /* 合适的阅读字号 */
+            max-height: 40vh; /* 限制最大高度，超出内容可滚动 */
+            overflow-y: auto; /* 内容超出时显示滚动条 */
+        }
+
+        .poem-area h2 {
+            text-align: center; /* 诗歌标题居中 */
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #34495e; /* 稍深标题色 */
+            font-size: 1.3em;
+        }
+
+        .poem-area p {
+            margin-bottom: 1em; /* 段落间距 */
+        }
+        /* 隐藏滚动条 (Webkit内核浏览器，如Chrome, Safari) */
+        .poem-area::-webkit-scrollbar {
+          width: 5px;
+        }
+        .poem-area::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.05);
+          border-radius: 10px;
+        }
+        .poem-area::-webkit-scrollbar-thumb {
+          background: rgba(0,0,0,0.2);
+          border-radius: 10px;
+        }
+        .poem-area::-webkit-scrollbar-thumb:hover {
+          background: rgba(0,0,0,0.4);
+        }
+
     </style>
 </head>
 <body>
-    <h1>春郁之秋</h1>
 
-    <!-- controls: 显示播放控件 -->
-    <!-- src: 指定音乐文件的路径。因为HTML和音乐在同一文件夹，直接写文件名 -->
-    <audio controls src="Für_Alina.flac">
-        <!-- 如果浏览器不支持audio标签或指定的音频格式，会显示这段文字 -->
-        您的浏览器不支持播放此音频格式，请尝试更换浏览器或设备。
-        <!-- 如果你用了MP3，就把 src="my_song.flac" 改成 src="my_song.mp3" -->
-        <!-- 如果你想同时提供 FLAC 和 MP3，让浏览器自己选，可以这样写：
-        <audio controls>
-          <source src="my_song.flac" type="audio/flac">
-          <source src="my_song.mp3" type="audio/mpeg">
-          您的浏览器不支持播放此音频格式。
+    <div class="player-container">
+        <div class="cover-area">
+            {/* <!-- 重要：替换为你自己的封面图片文件名 --> */}
+            <img src="封面.jpg" alt="专辑封面" class="cover-art" id="coverArt">
+        </div>
+
+        {/* <!-- 重要：替换为你自己的音乐标题 --> */}
+        <h1 class="Für_Alina">春郁之秋</h1>
+
+        {/* <!-- 重要：替换为你自己的音乐文件名 --> */}
+        <audio id="audioPlayer" controls src="Fur_Alina.flac">
+            您的浏览器不支持播放此音频格式。
         </audio>
-        这样浏览器会优先尝试加载第一个 source，如果不支持，再尝试下一个。你需要同时上传 my_song.flac 和 my_song.mp3。
-        -->
-    </audio>
+    </div>
+
+    <div class="poem-area">
+        {/* <!-- 重要：替换为你自己的诗歌标题 --> */}
+        <h2>无题</h2>
+
+        {/* <!-- 重要：替换为你自己的诗歌内容 --> */}
+        {/* <!-- 每个 <p> 标签代表一个段落 --> */}
+        <p>
+            我看见它盘旋在那里，<br>
+            每个生命消亡的背后。<br>
+            都有它的影子。<br>
+            是记忆，还是未竟的诗篇？
+        </p>
+        <p>
+            有人说那是天堂，<br>
+            有人说那是地府，。<br>
+            也有人说，那里空无一物，<br>
+            只有永恒的沉寂。
+        </p>
+        <p>
+            我游离于它们之间，<br>
+            端详着它的面目。<br>
+            一言不发，<br>
+            只是充满了愤怒。
+        </p>
+        {/* <!-- 你可以继续添加更多 <p> 段落 --> */}
+    </div>
+
+    <script>
+        // JavaScript 代码，用于控制封面旋转
+        const audioPlayer = document.getElementById('audioPlayer');
+        const coverArt = document.getElementById('coverArt');
+
+        if(audioPlayer && coverArt) {
+            // 监听播放事件
+            audioPlayer.addEventListener('play', () => {
+                coverArt.classList.add('playing'); // 添加旋转样式
+            });
+
+            // 监听暂停事件
+            audioPlayer.addEventListener('pause', () => {
+                coverArt.classList.remove('playing'); // 移除旋转样式
+            });
+
+            // 监听播放结束事件
+            audioPlayer.addEventListener('ended', () => {
+                coverArt.classList.remove('playing'); // 移除旋转样式
+            });
+        } else {
+            console.error("播放器或封面元素未找到！");
+        }
+    </script>
 
 </body>
 </html>

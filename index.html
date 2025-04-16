@@ -3,280 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>黑胶唱片播放器 (最终优化版 v4 - Drag Fix)</title>
+  <title>黑胶唱片播放器 (最终优化版 v6 - Fixes)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     /* ---------------------- 基础样式重置 ---------------------- */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Inter', sans-serif;
-      line-height: 1.6;
-      background-color: var(--color-bg);
-      color: var(--color-text);
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 50px 15px;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      font-family: 'Inter', sans-serif; line-height: 1.6;
+      background-color: var(--color-bg); color: var(--color-text);
+      display: flex; justify-content: center; align-items: flex-start;
+      min-height: 100vh; padding: 50px 15px;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
       overscroll-behavior: none;
     }
 
     /* ---------------------- CSS变量与全局主题 ---------------------- */
     :root {
-      --color-bg: #f4f3f1;
-      --color-text: #333;
-      --color-secondary: #6a11cb;
-      --color-accent: #2575fc;
-      --color-base: #e6e2dc;
-      --color-record: #1a1a1a;
-      --color-record-groove: #3a3a3a; /* Moiré Tweak */
-      --color-error-bg: rgba(200, 50, 50, 0.85);
-      --color-error-text: #fff;
-      --shadow-light: rgba(255, 255, 255, 0.8);
-      --shadow-dark: rgba(184, 181, 176, 0.6);
-      --transition-fast: 0.3s ease;
+      --color-bg: #f4f3f1; --color-text: #333; --color-secondary: #6a11cb;
+      --color-accent: #2575fc; --color-base: #e6e2dc; --color-record: #1a1a1a;
+      --color-record-groove: #3a3a3a; --color-error-bg: rgba(200, 50, 50, 0.85);
+      --color-error-text: #fff; --shadow-light: rgba(255, 255, 255, 0.8);
+      --shadow-dark: rgba(184, 181, 176, 0.6); --transition-fast: 0.3s ease;
       --focus-outline-color: var(--color-accent);
+      --touch-target-min-height: 44px; /* Minimum recommended touch height */
+      --progress-bar-height: 10px; /* Default visual height */
+      --progress-bar-height-mobile: 12px; /* Slightly taller visual on mobile */
     }
 
     /* ---------------------- 播放器容器 ---------------------- */
-    .container {
-      width: 100%;
-      max-width: 420px;
-    }
-    .player-section {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-    }
+    .container { width: 100%; max-width: 420px; }
+    .player-section { position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; }
 
     /* ---------------------- 黑胶播放器主体 ---------------------- */
-    .vinyl-player-wrapper {
-      position: relative;
-      width: 300px;
-      height: 300px;
-      margin-bottom: 2.5rem;
-      max-width: 100%;
-    }
-    .player-base {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: linear-gradient(145deg, var(--color-base), #ffffff);
-      box-shadow: 5px 5px 15px var(--shadow-dark), -5px -5px 15px var(--shadow-light),
-                  inset 0 -3px 10px rgba(0, 0, 0, 0.05);
-      z-index: 0;
-    }
+    .vinyl-player-wrapper { position: relative; width: 300px; height: 300px; margin-bottom: 2.5rem; max-width: 100%; }
+    .player-base { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(145deg, var(--color-base), #ffffff); box-shadow: 5px 5px 15px var(--shadow-dark), -5px -5px 15px var(--shadow-light), inset 0 -3px 10px rgba(0, 0, 0, 0.05); z-index: 0; }
 
     /* ---------------------- 黑胶唱片样式 ---------------------- */
     .record {
-      position: absolute;
-      width: 95%;
-      height: 95%;
-      top: 2.5%;
-      left: 2.5%;
-      border-radius: 50%;
-      background-color: var(--color-record);
-      /* Moiré Tweak 2 */
-      background-image:
-        radial-gradient(circle at center, #333 10%, transparent 50%),
-        repeating-radial-gradient(
-          circle at center,
-          var(--color-record),
-          var(--color-record) 0.7px,
-          var(--color-record-groove) 0.7px,
-          var(--color-record-groove) 4px
-        );
-      background-size: 100% 100%, 100% 100%;
-      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3),
-                  0 4px 10px rgba(0, 0, 0, 0.2);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 2;
-      transition: box-shadow var(--transition-fast);
-      will-change: transform;
-      user-select: none;
-      -webkit-user-drag: none;
-
-      animation: spin 4s linear infinite;
-      animation-play-state: paused;
+        position: absolute; width: 95%; height: 95%; top: 2.5%; left: 2.5%; border-radius: 50%;
+        background-color: var(--color-record);
+        background-image: radial-gradient(circle at center, #333 10%, transparent 50%), repeating-radial-gradient( circle at center, var(--color-record), var(--color-record) 0.7px, var(--color-record-groove) 0.7px, var(--color-record-groove) 1.1px );
+        background-size: 100% 100%, 100% 100%;
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2);
+        display: flex; justify-content: center; align-items: center; z-index: 2;
+        transition: box-shadow var(--transition-fast); will-change: transform; user-select: none; -webkit-user-drag: none;
+        animation: spin 4s linear infinite; animation-play-state: paused;
     }
-
-    .record.playing {
-      animation-play-state: running;
-      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3),
-                  0 4px 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 255, 255, 0.08);
-    }
+    .record.playing { animation-play-state: running; box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 255, 255, 0.08); }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     /* ---------------------- 唱片封面 ---------------------- */
-    #album-art {
-      width: 35%;
-      height: 35%;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 5px solid #111;
-      background-color: #333;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-      z-index: 4;
-      position: relative;
-      transition: transform var(--transition-fast);
-      color: #aaa;
-      font-size: 10px;
-      text-align: center;
-      line-height: 1.2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+    #album-art { width: 35%; height: 35%; border-radius: 50%; object-fit: cover; border: 5px solid #111; background-color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 4; position: relative; transition: transform var(--transition-fast); color: #aaa; font-size: 10px; text-align: center; line-height: 1.2; display: flex; justify-content: center; align-items: center; }
     .record.playing #album-art { transform: scale(1.03); }
 
     /* ---------------------- 唱臂 (Tonearm) ---------------------- */
-    .tonearm {
-      position: absolute;
-      top: calc(50% - 135px);
-      right: calc(50% - 135px);
-      width: 1px;
-      height: 1px;
-      z-index: 10;
-    }
-    .tonearm-rotator {
-      position: absolute;
-      width: 180px;
-      height: 20px;
-      bottom: -10px;
-      left: -10px;
-      transform-origin: 10px 10px;
-      transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-      z-index: 1;
-      transform: rotate(70deg); /* Initial resting angle */
-      will-change: transform;
-    }
+    .tonearm { position: absolute; top: calc(50% - 135px); right: calc(50% - 135px); width: 1px; height: 1px; z-index: 10; }
+    .tonearm-rotator { position: absolute; width: 180px; height: 20px; bottom: -10px; left: -10px; transform-origin: 10px 10px; transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); z-index: 1; transform: rotate(70deg); will-change: transform; }
     .tonearm-bar {
-      position: absolute;
-      top: 6px;
-      left: 10px;
-      width: 175px;
-      height: 8px;
-      background-color: #aaa;
-      border-radius: 4px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-      z-index: 10;
-      cursor: pointer;
-      will-change: transform;
+      position: absolute; top: 6px; left: 10px;
+      width: 175px; height: 8px; /* Visual height */
+      background-color: #aaa; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      z-index: 10; cursor: pointer; will-change: transform;
+      position: relative; /* Needed for pseudo-element positioning */
+    }
+    .tonearm-bar::after { /* Invisible touch area expansion */
+      content: ''; position: absolute; top: 50%; left: -5px; right: -5px;
+      height: var(--touch-target-min-height); transform: translateY(-50%);
+      /* background: rgba(0, 255, 0, 0.1); */ /* Uncomment to visualize */
     }
 
     /* ---------------------- 歌曲信息 ---------------------- */
-    .song-info {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      width: 100%;
-      padding: 0 1rem;
-    }
-    .song-info h2 {
-      font-size: 1.2rem;
-      font-weight: 500;
-      color: var(--color-text);
-      margin-bottom: 0.2rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-    .song-info h4 {
-      font-size: 0.9rem;
-      font-weight: 400;
-      color: #777;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
+    .song-info { text-align: center; margin-bottom: 1.5rem; width: 100%; padding: 0 1rem; }
+    .song-info h2 { font-size: 1.2rem; font-weight: 500; color: var(--color-text); margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .song-info h4 { font-size: 0.9rem; font-weight: 400; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
-    /* ---------------------- 进度条 ---------------------- */
+    /* ---------------------- 进度条 (Touch Target Enhanced v2) ---------------------- */
     .progress-container {
       width: 100%;
-      height: 10px;
+      height: var(--progress-bar-height); /* Visual height */
       background-color: #e0dcd7;
-      border-radius: 5px;
-      margin: 0.5rem 0 1rem;
-      overflow: hidden;
+      border-radius: calc(var(--progress-bar-height) / 2); /* Dynamic radius */
+      margin: 1rem 0; /* Consistent margin */
       box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.15);
       cursor: pointer;
-      position: relative;
+      position: relative; /* Needed for pseudo-element */
       -webkit-tap-highlight-color: transparent;
     }
+    /* Invisible pseudo-element to increase touch area vertically */
+    .progress-container::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        /* Calculate top/bottom to achieve target height centered on visual bar */
+        top: calc( (var(--progress-bar-height) - var(--touch-target-min-height)) / 2 );
+        bottom: calc( (var(--progress-bar-height) - var(--touch-target-min-height)) / 2 );
+        /* background: rgba(255, 0, 0, 0.1); */ /* Uncomment to visualize */
+        z-index: 0; /* Place behind the actual bar if needed, or just rely on container handling */
+    }
     .progress-bar {
-      height: 100%;
+      height: 100%; /* Fill the container's visual height */
       width: 0%;
       background: linear-gradient(to right, var(--color-secondary), var(--color-accent));
-      border-radius: 5px;
+      border-radius: inherit; /* Inherit radius from container */
       transition: width 0.1s linear;
-      pointer-events: none;
+      pointer-events: none; /* Bar itself is not interactive */
     }
 
     /* ---------------------- 时间显示 ---------------------- */
-    .time-display {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      padding: 0 0.5rem;
-      font-size: 0.8rem;
-      color: #666;
-      margin-bottom: 1.5rem;
-    }
+    .time-display { display: flex; justify-content: space-between; width: 100%; padding: 0 0.5rem; font-size: 0.8rem; color: #666; margin-bottom: 1.5rem; }
 
     /* ---------------------- 控制按钮 ---------------------- */
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      width: 100%;
-      padding: 0 5px;
-    }
+    .controls { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; padding: 0 5px; }
     .control-group { display: flex; align-items: center; }
     .prev-next-group { gap: 15px; }
     .control-item { display: flex; flex-direction: column; align-items: center; text-align: center; }
-    .control-button {
-      background: linear-gradient(145deg, var(--color-base), #fff);
-      border: none;
-      cursor: pointer;
-      box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light),
-                  inset 1px 1px 2px var(--shadow-light), inset -1px -1px 2px var(--shadow-dark);
-      transition: all 0.3s ease-out;
-      color: #555;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 6px;
-      border-radius: 50%;
-      touch-action: manipulation;
-    }
+    .control-button { background: linear-gradient(145deg, var(--color-base), #fff); border: none; cursor: pointer; box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light), inset 1px 1px 2px var(--shadow-light), inset -1px -1px 2px var(--shadow-dark); transition: all 0.3s ease-out; color: #555; display: flex; justify-content: center; align-items: center; margin-bottom: 6px; border-radius: 50%; touch-action: manipulation; }
     .prev-next-group .control-button { width: 52px; height: 52px; padding: 12px; }
     #play-pause-button { width: 119px; height: 52px; padding: 12px 20px; border-radius: 26px; }
-    .control-button:hover {
-      background: linear-gradient(145deg, #fff, var(--color-base));
-      color: #333;
-      box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
-    }
-    .control-button:active,
-    .control-button.playing {
-      box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
-      transform: translateY(1px);
-      color: #444;
-    }
+    .control-button:hover { background: linear-gradient(145deg, #fff, var(--color-base)); color: #333; box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light); }
+    .control-button:active, .control-button.playing { box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light); transform: translateY(1px); color: #444; }
     .control-button:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
     .control-label { font-size: 0.7rem; color: #777; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
     .control-button svg { width: 20px; height: 20px; display: block; fill: currentColor; }
@@ -285,33 +134,28 @@
     #play-pause-button.playing .icon-pause { display: inline-block; }
 
     /* ---------------------- 加载与错误指示 ---------------------- */
-    .loading-indicator, .error-message {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; display: none;
-    }
-    .loading-indicator {
-      width: 30px; height: 30px; border: 3px solid rgba(0, 0, 0, 0.2); border-radius: 50%; border-top-color: #666; animation: spin 1s ease-in-out infinite;
-    }
-    .error-message {
-      background-color: var(--color-error-bg); color: var(--color-error-text); padding: 8px 12px; border-radius: 5px; font-size: 0.85rem; text-align: center; max-width: 80%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
+    .loading-indicator, .error-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; display: none; }
+    .loading-indicator { width: 30px; height: 30px; border: 3px solid rgba(0, 0, 0, 0.2); border-radius: 50%; border-top-color: #666; animation: spin 1s ease-in-out infinite; }
+    .error-message { background-color: var(--color-error-bg); color: var(--color-error-text); padding: 8px 12px; border-radius: 5px; font-size: 0.85rem; text-align: center; max-width: 80%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
     .vinyl-player-wrapper.loading .loading-indicator { display: block; }
     .vinyl-player-wrapper.error .error-message { display: block; }
     .vinyl-player-wrapper.empty .error-message { display: block; }
 
     /* ---------------------- 响应式适配 ---------------------- */
-    @media (max-width: 480px) { /* Styles for 480px and below */ }
-    @media (max-width: 360px) { /* Styles for 360px and below */ }
-    /* (Keeping responsive styles collapsed for brevity) */
-     @media (max-width: 480px) {
+    @media (max-width: 480px) {
       body { padding: 30px 10px; }
       .vinyl-player-wrapper { width: 260px; height: 260px; margin-bottom: 2rem; }
       .tonearm { top: calc(50% - 120px); right: calc(50% - 120px); }
       .tonearm-rotator { width: 150px; height: 16px; bottom: -8px; left: -8px; transform-origin: 8px 8px;}
       .tonearm-bar { width: 140px; left: 8px; top: 4px; height: 6px; border-radius: 3px; }
+      .tonearm-bar::after { height: var(--touch-target-min-height); }
+
       .song-info h2 { font-size: 1.1rem; }
       .song-info h4 { font-size: 0.85rem; }
-      .progress-container { height: 8px; border-radius: 4px; }
-      .progress-bar { border-radius: 4px; }
+
+      .progress-container { height: var(--progress-bar-height-mobile); /* Use mobile height variable */ }
+      /* ::before pseudo-element adjusts automatically based on container height */
+
       .prev-next-group { gap: 10px; }
       .prev-next-group .control-button { width: 46px; height: 46px; padding: 10px; }
       #play-pause-button { width: 102px; height: 46px; padding: 10px 15px; border-radius: 23px; }
@@ -323,18 +167,24 @@
       .tonearm { top: calc(50% - 105px); right: calc(50% - 105px); }
       .tonearm-rotator { width: 125px; height: 14px; bottom: -7px; left: -7px; transform-origin: 7px 7px;}
       .tonearm-bar { width: 115px; left: 7px; top: 4px; height: 6px; border-radius: 3px;}
+      .tonearm-bar::after { height: var(--touch-target-min-height); }
+
       .controls { padding: 0; }
+      /* Progress bar height already set by 480px query */
+
       .prev-next-group { gap: 8px; }
       .prev-next-group .control-button { width: 42px; height: 42px; padding: 9px; }
       #play-pause-button { width: 94px; height: 42px; padding: 9px 12px; border-radius: 21px; }
       .control-button svg { width: 16px; height: 16px; }
     }
+
   </style>
 </head>
 <body>
+  <!-- HTML structure remains the same -->
   <div class="container">
     <div class="player-section">
-      <!-- Visuals -->
+       <!-- Visuals -->
       <div class="vinyl-player-wrapper" id="player-wrapper">
         <div class="player-base"></div>
         <div class="record" id="record">
@@ -358,6 +208,7 @@
         <h4 id="song-artist"></h4>
       </div>
       <div class="progress-container" id="progress-container" role="slider" aria-label="歌曲进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+         <!-- Enhanced touch area via ::before -->
         <div class="progress-bar" id="progress-bar"></div>
       </div>
       <div class="time-display">
@@ -365,40 +216,42 @@
         <span id="duration">0:00</span>
       </div>
       <div class="controls">
-        <div class="control-group play-group">
-          <div class="control-item">
-            <button id="play-pause-button" class="control-button" aria-label="播放">
-              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-            </button>
-            <span class="control-label" id="play-pause-label">播放</span>
-          </div>
-        </div>
-        <div class="control-group prev-next-group">
-          <div class="control-item">
-            <button id="prev-button" class="control-button" aria-label="上一首">
-              <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"></path></svg>
-            </button>
-            <span class="control-label" id="prev-label">上一首</span>
-          </div>
-          <div class="control-item">
-            <button id="next-button" class="control-button" aria-label="下一首">
-              <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
-            </button>
-            <span class="control-label" id="next-label">下一首</span>
-          </div>
-        </div>
+         <!-- Controls structure remains the same -->
+         <div class="control-group play-group">
+            <div class="control-item">
+                <button id="play-pause-button" class="control-button" aria-label="播放">
+                <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                </button>
+                <span class="control-label" id="play-pause-label">播放</span>
+            </div>
+            </div>
+            <div class="control-group prev-next-group">
+            <div class="control-item">
+                <button id="prev-button" class="control-button" aria-label="上一首">
+                <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"></path></svg>
+                </button>
+                <span class="control-label" id="prev-label">上一首</span>
+            </div>
+            <div class="control-item">
+                <button id="next-button" class="control-button" aria-label="下一首">
+                <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
+                </button>
+                <span class="control-label" id="next-label">下一首</span>
+            </div>
+            </div>
       </div>
     </div>
   </div>
 
   <script type="module">
-    // Constants
+    // --- Constants ---
     const TONEARM_ANGLES = { RESTING: 70, START: 100 };
     const TONEARM_DRAG_LIMITS = { MIN: 65, MAX: 110 };
 
-    // DOM Elements Cache
-    const elements = { /* (Keeping collapsed for brevity) */
+    // --- DOM Elements Cache ---
+    // (This is the full cache, previously collapsed)
+    const elements = {
         audioPlayer: document.getElementById('audio-player'),
         playPauseButton: document.getElementById('play-pause-button'),
         playPauseLabel: document.getElementById('play-pause-label'),
@@ -420,27 +273,36 @@
         playerWrapper: document.getElementById('player-wrapper')
     };
 
-    // Player State
-    const state = { /* (Keeping collapsed for brevity) */
-        isPlaying: false, isLoading: false, hasError: false, isEmpty: false,
-        currentTrackIndex: 0, progressAnimId: null, isDraggingTonearm: false,
-        tonearmDragStartAngle: 0, isDraggingProgress: false, wasPlayingBeforeDrag: false,
-        playlist: [
+    // --- Player State ---
+    // (This is the full state object, previously collapsed)
+    const state = {
+        isPlaying: false,
+        isLoading: false,
+        hasError: false,
+        isEmpty: false,
+        currentTrackIndex: 0,
+        progressAnimId: null,
+        isDraggingTonearm: false,
+        tonearmDragStartAngle: 0,
+        isDraggingProgress: false,
+        wasPlayingBeforeDrag: false, // Used specifically for progress bar drag
+        playlist: [ // Example playlist
             { title: "SoundHelix Song 1", artist: "SoundHelix", audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", albumArt: "https://picsum.photos/seed/song1/200/200" },
             { title: "SoundHelix Song 2", artist: "SoundHelix", audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", albumArt: "https://picsum.photos/seed/song2/200/200" },
             { title: "SoundHelix Song 3", artist: "SoundHelix", audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", albumArt: "https://picsum.photos/seed/song3/200/200" }
         ]
     };
 
-    // Utility Functions
-    const utils = { /* (Keeping collapsed for brevity) */
-        formatTime: (seconds) => { /* ... */
+    // --- Utility Functions ---
+    // (This is the full utils object, previously collapsed)
+    const utils = {
+        formatTime: (seconds) => {
             const time = Math.max(0, seconds || 0);
             const minutes = Math.floor(time / 60);
             const secs = Math.floor(time % 60);
             return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
         },
-        throttle: (func, limit) => { /* ... */
+        throttle: (func, limit) => {
             let inThrottle;
             return function(...args) {
               if (!inThrottle) {
@@ -450,7 +312,7 @@
               }
             }
         },
-        getAngleRelativeToPivot: (clientX, clientY) => { /* ... */
+        getAngleRelativeToPivot: (clientX, clientY) => {
             const rect = elements.tonearmBase.getBoundingClientRect();
             let pivotOffsetX = 10, pivotOffsetY = 10;
             if (window.innerWidth <= 480 && window.innerWidth > 360) { pivotOffsetX = 8; pivotOffsetY = 8; }
@@ -460,84 +322,100 @@
             const angleRad = Math.atan2(clientY - pivotY, clientX - pivotX);
             return angleRad * (180 / Math.PI);
         },
-        getEventCoords: (e) => { /* ... */
+        getEventCoords: (e) => {
             if (e.touches && e.touches.length > 0) return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
             if (e.changedTouches && e.changedTouches.length > 0) return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
             return { clientX: e.clientX, clientY: e.clientY };
         }
     };
 
-    // Player Logic
+    // --- Player Logic ---
+    // (This is the full player object, previously collapsed, with stop logic refined)
     const player = {
-        // State Setters (Loading, Error, Empty, Controls Enabled)
-        setLoadingState(isLoading) { /* ... */
+        setLoadingState(isLoading) {
             if (state.isLoading === isLoading) return;
             state.isLoading = isLoading;
             elements.playerWrapper.classList.toggle('loading', isLoading);
-            if (isLoading) player.setErrorState(false);
+            // Clear error when starting to load ONLY IF we are actually setting loading to true
+            if (isLoading) {
+                player.setErrorState(false); // Clear previous error display
+            }
             player.setControlsEnabled(!isLoading && !state.hasError && !state.isEmpty);
         },
-        setErrorState(hasError, message = "音频加载失败") { /* ... */
+
+        setErrorState(hasError, message = "音频加载失败") {
+            // Only update if state changes
+            if (state.hasError === hasError && !hasError) return; // Don't clear if already clear
             state.hasError = hasError;
             elements.playerWrapper.classList.toggle('error', hasError);
             if (hasError) {
-              elements.errorMessage.textContent = message;
-              player.setLoadingState(false);
-              if (state.isPlaying) {
-                state.isPlaying = false;
-                player.updateButtonUI(false);
-                player.updateVisuals(false);
-                player.stopProgressAnimation();
-              }
+                elements.errorMessage.textContent = message;
+                player.setLoadingState(false); // Ensure loading is off
+                // Force paused state
+                if (state.isPlaying) {
+                    state.isPlaying = false;
+                    player.updateButtonUI(false);
+                    player.updateVisuals(false);
+                    player.stopProgressAnimation();
+                }
+            } else {
+                 elements.errorMessage.textContent = ""; // Clear message if setting error false
             }
-            player.setControlsEnabled(!state.isLoading && !hasError && !state.isEmpty);
+            // Controls depend on loading, error, and empty states
+            player.setControlsEnabled(!state.isLoading && !state.hasError && !state.isEmpty);
         },
-        setEmptyState(isEmpty) { /* ... */
-             state.isEmpty = isEmpty;
+
+        setEmptyState(isEmpty) {
+            if (state.isEmpty === isEmpty) return;
+            state.isEmpty = isEmpty;
             elements.playerWrapper.classList.toggle('empty', isEmpty);
             if (isEmpty) {
-              elements.errorMessage.textContent = "播放列表为空";
-              elements.songTitle.textContent = "无歌曲";
-              elements.songArtist.textContent = "";
-              elements.albumArt.src = "https://via.placeholder.com/200?text=Empty";
-              if (state.isPlaying) {
-                 state.isPlaying = false;
-                 player.updateButtonUI(false);
-                 player.updateVisuals(false);
-                 player.stopProgressAnimation();
-              }
+                elements.errorMessage.textContent = "播放列表为空";
+                elements.songTitle.textContent = "无歌曲";
+                elements.songArtist.textContent = "";
+                elements.albumArt.src = "https://via.placeholder.com/200?text=Empty";
+                if (state.isPlaying) {
+                    state.isPlaying = false;
+                    player.updateButtonUI(false);
+                    player.updateVisuals(false);
+                    player.stopProgressAnimation();
+                }
             }
+             // Controls depend on loading, error, and empty states
             player.setControlsEnabled(!state.isLoading && !state.hasError && !isEmpty);
         },
-        setControlsEnabled(enabled) { /* ... */
+
+        setControlsEnabled(enabled) {
             const effectiveEnabled = enabled && !state.isLoading && !state.hasError && !state.isEmpty;
-            if (elements.playPauseButton.disabled === effectiveEnabled) { // Check if update needed
-              elements.playPauseButton.disabled = !effectiveEnabled;
-              elements.prevButton.disabled = !effectiveEnabled;
-              elements.nextButton.disabled = !effectiveEnabled;
-              const pointerEvents = effectiveEnabled ? 'auto' : 'none';
-              const cursor = effectiveEnabled ? 'pointer' : 'default';
-              elements.progressContainer.style.pointerEvents = pointerEvents;
-              elements.progressContainer.style.cursor = cursor;
-              elements.tonearmBar.style.pointerEvents = pointerEvents;
-              elements.tonearmBar.style.cursor = cursor;
+            // Only update if the disabled state needs to change
+            if (elements.playPauseButton.disabled === effectiveEnabled) {
+                elements.playPauseButton.disabled = !effectiveEnabled;
+                elements.prevButton.disabled = !effectiveEnabled;
+                elements.nextButton.disabled = !effectiveEnabled;
+                const pointerEvents = effectiveEnabled ? 'auto' : 'none';
+                const cursor = effectiveEnabled ? 'pointer' : 'default';
+                elements.progressContainer.style.pointerEvents = pointerEvents;
+                elements.progressContainer.style.cursor = cursor;
+                elements.tonearmBar.style.pointerEvents = pointerEvents;
+                elements.tonearmBar.style.cursor = cursor;
             }
         },
 
-        // UI Updaters
-        updateButtonUI(isPlaying) { /* ... */
+        updateButtonUI(isPlaying) {
             elements.playPauseButton.classList.toggle('playing', isPlaying);
             elements.playPauseLabel.textContent = isPlaying ? '暂停' : '播放';
             elements.playPauseButton.setAttribute('aria-label', isPlaying ? '暂停' : '播放');
         },
-        updateVisuals(isPlaying) { /* ... */
+
+        updateVisuals(isPlaying) {
             elements.record.classList.toggle('playing', isPlaying);
             if (!state.isDraggingTonearm) {
-              const targetAngle = isPlaying ? TONEARM_ANGLES.START : TONEARM_ANGLES.RESTING;
-              elements.tonearmRotator.style.transform = `rotate(${targetAngle}deg)`;
+                const targetAngle = isPlaying ? TONEARM_ANGLES.START : TONEARM_ANGLES.RESTING;
+                elements.tonearmRotator.style.transform = `rotate(${targetAngle}deg)`;
             }
         },
-        updateProgressBar() { /* ... */
+
+        updateProgressBar() {
             const { duration, currentTime } = elements.audioPlayer;
             const isValid = duration && !isNaN(duration) && duration > 0;
             const progress = isValid ? currentTime / duration : 0;
@@ -551,71 +429,100 @@
             elements.progressContainer.setAttribute('aria-valuetext', `当前 ${utils.formatTime(currentTime)} / 总时长 ${utils.formatTime(duration)}`);
         },
 
-        // Progress Animation
-        startProgressAnimation() { /* ... */
-            player.stopProgressAnimation();
+        startProgressAnimation() {
+            player.stopProgressAnimation(); // Clear any existing animation frame
             function animationStep() {
-              if (state.isPlaying && !state.isDraggingTonearm && !state.isDraggingProgress) {
-                  player.updateProgressBar();
-                  state.progressAnimId = requestAnimationFrame(animationStep);
-              }
+                // Check all conditions are met before proceeding
+                if (state.isPlaying && !state.isDraggingTonearm && !state.isDraggingProgress && !state.isLoading && !state.hasError) {
+                    player.updateProgressBar();
+                    // Request the next frame only if conditions are still met
+                    state.progressAnimId = requestAnimationFrame(animationStep);
+                } else {
+                    // If conditions aren't met, ensure animation is stopped
+                    player.stopProgressAnimation();
+                }
             }
-            if (state.isPlaying) {
+            // Only schedule if conditions are initially met
+            if (state.isPlaying && !state.isDraggingTonearm && !state.isDraggingProgress && !state.isLoading && !state.hasError) {
                state.progressAnimId = requestAnimationFrame(animationStep);
             }
         },
-        stopProgressAnimation() { /* ... */
+
+        stopProgressAnimation() {
             if (state.progressAnimId) {
-              cancelAnimationFrame(state.progressAnimId);
-              state.progressAnimId = null;
+                cancelAnimationFrame(state.progressAnimId);
+                state.progressAnimId = null;
             }
         },
 
-        // Core Playback Logic
-        loadTrack(trackIndex, autoPlay = false) { /* ... */
+        // --- Playback Control ---
+        loadTrack(trackIndex, autoPlay = false) {
             if (state.isEmpty || trackIndex < 0 || trackIndex >= state.playlist.length) {
                 if (state.playlist.length === 0) player.setEmptyState(true);
                 return;
             }
-            player.stopProgressAnimation();
-            player.setLoadingState(true);
-            player.setErrorState(false);
+
+            player.stopProgressAnimation(); // Stop updates for old track
+            player.setLoadingState(true); // Set loading *before* pausing/changing src
+            player.setErrorState(false); // Clear previous errors
+
+            // Stop current playback *before* changing src
+            if (!elements.audioPlayer.paused) {
+                elements.audioPlayer.pause(); // This should trigger the 'pause' event handler
+            }
+            // Ensure state reflects paused immediately, even if pause event is async
+            state.isPlaying = false;
+            player.updateButtonUI(false); // Update UI immediately
+            player.updateVisuals(false);
+
             state.currentTrackIndex = trackIndex;
             const track = state.playlist[trackIndex];
+            // console.log(`Loading track ${trackIndex}: ${track.title}`);
+
             elements.songTitle.textContent = track.title;
             elements.songArtist.textContent = track.artist;
+
+            // Reset Album Art
             elements.albumArt.src = "https://via.placeholder.com/100?text=Load";
             elements.albumArt.alt = "加载封面中...";
             const img = new Image();
             img.onload = () => { elements.albumArt.src = img.src; elements.albumArt.alt = `封面: ${track.title}`; };
             img.onerror = () => { elements.albumArt.src = "https://via.placeholder.com/200?text=No+Cover"; elements.albumArt.alt = "无法加载封面"; };
             img.src = track.albumArt || "https://via.placeholder.com/200?text=No+Cover";
-            if (!elements.audioPlayer.paused) {
-                elements.audioPlayer.pause();
-            }
-            state.isPlaying = false;
-            player.updateButtonUI(false);
-            player.updateVisuals(false);
+
+            // Set new source and load
             elements.audioPlayer.src = track.audioSrc;
             elements.audioPlayer.currentTime = 0;
-            elements.audioPlayer.load();
-            player.updateProgressBar();
+            elements.audioPlayer.load(); // Trigger loading
+
+            player.updateProgressBar(); // Reset progress display
+
+            // Use 'loadeddata' as the primary event to know it's safe to potentially play
             const readyHandler = () => {
-                player.setLoadingState(false);
-                player.updateProgressBar();
-                player.setControlsEnabled(true);
+                // console.log(`Track ${trackIndex} ready (loadeddata)`);
+                player.setLoadingState(false); // Loading finished
+                player.updateProgressBar(); // Update duration display
+                player.setControlsEnabled(true); // Enable controls
                 if (autoPlay) {
+                    // Small delay helps avoid race conditions/interruptions
                     setTimeout(() => player.playAudio(), 50);
                 }
             };
+
+            // Remove previous listeners to prevent duplicates
             elements.audioPlayer.removeEventListener('loadeddata', player._currentReadyHandler);
             elements.audioPlayer.removeEventListener('error', player._currentErrorHandler);
+
+            // Store references to the handlers for removal later
             player._currentReadyHandler = readyHandler;
             player._currentErrorHandler = (e) => player.handleAudioError(e, trackIndex);
+
             elements.audioPlayer.addEventListener('loadeddata', player._currentReadyHandler, { once: true });
             elements.audioPlayer.addEventListener('error', player._currentErrorHandler, { once: true });
         },
-        handleAudioError(e, trackIndex) { /* ... */
+
+        handleAudioError(e, trackIndex) {
+           // console.error(`Audio Error (Track ${trackIndex}):`, e, elements.audioPlayer.error);
            const error = elements.audioPlayer.error;
            let message = "音频加载/播放失败";
            if (error) {
@@ -626,142 +533,221 @@
                default: message = `发生错误 (Code ${error.code})`;
              }
            }
+           // Only show error if it's for the *currently intended* track and not an abort
            if (state.currentTrackIndex === trackIndex && (!error || error.code !== MediaError.MEDIA_ERR_ABORTED)) {
                player.setErrorState(true, message);
+           } else {
+               // If it's an abort or for a different track, ensure loading is off
+               player.setLoadingState(false);
            }
         },
-        playAudio() { /* ... */
+
+        playAudio() {
+            // console.log("Attempting playAudio(). State:", { isPlaying: state.isPlaying, isLoading: state.isLoading, hasError: state.hasError, isEmpty: state.isEmpty });
+            // Prevent playing if already playing, loading, error, or empty
             if (state.isPlaying || state.isLoading || state.hasError || state.isEmpty) { return; }
-            if (elements.audioPlayer.readyState < elements.audioPlayer.HAVE_FUTURE_DATA) {
-                player.setLoadingState(true);
+
+            // Check if ready state allows playback
+            // HAVE_METADATA is often enough, HAVE_FUTURE_DATA is safer
+            if (elements.audioPlayer.readyState < elements.audioPlayer.HAVE_METADATA) {
+                // console.warn("playAudio() called but audio not ready enough. State:", elements.audioPlayer.readyState);
+                player.setLoadingState(true); // Show loading feedback
                  elements.audioPlayer.addEventListener('loadeddata', () => {
-                     if (!state.isPlaying && !state.hasError) { // Check again
-                        player.setLoadingState(false);
-                        player.playAudio();
+                    // console.log("Retrying play after loadeddata received.");
+                     // Check state again in case it changed (e.g., user paused)
+                     if (!state.isPlaying && !state.hasError && !state.isLoading) {
+                        player.playAudio(); // Retry
+                     } else {
+                        player.setLoadingState(false); // Turn off loading if no longer relevant
                      }
                  }, { once: true });
                 return;
             }
+
+            // console.log("Calling audioPlayer.play()");
             const playPromise = elements.audioPlayer.play();
+
             if (playPromise !== undefined) {
-              playPromise.catch(error => {
-                if (error.name !== 'AbortError') {
-                     player.handleAudioError(error, state.currentTrackIndex);
-                     // Ensure UI reflects actual state if play fails
-                     state.isPlaying = false;
-                     player.updateButtonUI(false);
-                     player.updateVisuals(false);
-                }
-              });
+                playPromise.catch(error => {
+                    // console.error("Playback failed:", error);
+                    // Ignore AbortError from rapid pause/load actions
+                    if (error.name !== 'AbortError') {
+                        player.handleAudioError(error, state.currentTrackIndex);
+                        // If play fails, ensure state reflects pause
+                        state.isPlaying = false; // Force state
+                        player.updateButtonUI(false);
+                        player.updateVisuals(false);
+                    } else {
+                         // If aborted, likely due to user action, ensure state is consistent
+                         if (state.isPlaying) { // If state still thinks it's playing
+                            state.isPlaying = false;
+                            player.updateButtonUI(false);
+                            player.updateVisuals(false);
+                         }
+                    }
+                });
             }
+            // No need to optimistically update UI, let the 'play' event handle it
         },
-        pauseAudio() { /* ... */
-             if (!state.isPlaying) return;
+
+        pauseAudio() {
+            // console.log("Attempting pauseAudio(). State:", { isPlaying: state.isPlaying });
+            // Prevent pausing if not playing or if in error/loading state that prevents interaction
+            if (!state.isPlaying || state.isLoading || state.hasError) return;
             elements.audioPlayer.pause();
+            // UI updates are handled by the 'pause' event listener to ensure synchronicity
         },
-        playNextTrack() { /* ... */
-             if (state.isEmpty) return;
+
+        playNextTrack() {
+            if (state.isEmpty || state.isLoading) return; // Prevent action during loading
+            // console.log("Playing next track");
             const nextIndex = (state.currentTrackIndex + 1) % state.playlist.length;
             player.loadTrack(nextIndex, true);
         },
-        playPrevTrack() { /* ... */
-            if (state.isEmpty) return;
-            if (elements.audioPlayer.currentTime < 3) {
-              const prevIndex = (state.currentTrackIndex - 1 + state.playlist.length) % state.playlist.length;
-              player.loadTrack(prevIndex, true);
-            } else {
-              elements.audioPlayer.currentTime = 0;
-              if (!state.isPlaying) { player.playAudio(); }
+
+        playPrevTrack() {
+            if (state.isEmpty || state.isLoading) return; // Prevent action during loading
+            // console.log("Playing previous track / restarting");
+            if (elements.audioPlayer.currentTime < 3 && state.currentTrackIndex > 0) { // Allow wrapping from track 0
+                 const prevIndex = (state.currentTrackIndex - 1 + state.playlist.length) % state.playlist.length;
+                 player.loadTrack(prevIndex, true);
+            } else if (elements.audioPlayer.currentTime < 3 && state.currentTrackIndex === 0) {
+                // Wrap around to last track if on first track and near beginning
+                 const prevIndex = state.playlist.length - 1;
+                 player.loadTrack(prevIndex, true);
+            }
+            else {
+                 elements.audioPlayer.currentTime = 0;
+                 // If paused, need to initiate play again
+                 if (!state.isPlaying) {
+                    player.playAudio();
+                 } else {
+                    // If already playing, just seeking to 0, ensure animation runs
+                    player.startProgressAnimation();
+                 }
             }
         },
-        togglePlayPause() { /* ... */
-             if (state.isLoading || state.hasError || state.isEmpty) return;
-            if (state.isPlaying) { player.pauseAudio(); }
-            else { player.playAudio(); }
+
+        togglePlayPause() {
+            // console.log(`Toggling Play/Pause. Current state: ${state.isPlaying ? 'Playing' : 'Paused'}`);
+            // Allow toggle only if controls should be enabled
+            if (state.isLoading || state.hasError || state.isEmpty) return;
+            if (state.isPlaying) {
+                player.pauseAudio();
+            } else {
+                player.playAudio();
+            }
         },
 
-        // Interaction Handlers
-        handleProgressClick(e) { /* ... */
+        // --- Interaction Handlers ---
+        handleProgressClick(e) {
+            // Allow click only if controls enabled and not currently dragging
             if (state.isLoading || state.hasError || state.isEmpty || state.isDraggingProgress) return;
+
             const { duration } = elements.audioPlayer;
             if (!duration || isNaN(duration) || duration <= 0) return;
+
             const rect = elements.progressContainer.getBoundingClientRect();
-            const { clientX } = utils.getEventCoords(e);
+            const { clientX } = utils.getEventCoords(e); // Use helper
             const clickX = clientX - rect.left;
             const clickProgress = Math.min(1, Math.max(0, clickX / rect.width));
+
             elements.audioPlayer.currentTime = clickProgress * duration;
-            player.updateProgressBar();
+            player.updateProgressBar(); // Immediately update UI visually
+            // If paused, ensure tonearm position reflects the seek
+            if (!state.isPlaying) {
+                 const targetAngle = TONEARM_ANGLES.RESTING + (TONEARM_ANGLES.START - TONEARM_ANGLES.RESTING) * clickProgress;
+                 const clampedAngle = Math.max(TONEARM_ANGLES.RESTING, Math.min(TONEARM_ANGLES.START, targetAngle));
+                 elements.tonearmRotator.style.transform = `rotate(${clampedAngle}deg)`;
+            }
         },
-        handleTonearmMouseDown(e) { /* ... */
-             if (state.isLoading || state.hasError || state.isEmpty) return;
+
+        handleTonearmMouseDown(e) {
+            if (state.isLoading || state.hasError || state.isEmpty) return;
             const { clientX, clientY } = utils.getEventCoords(e);
             state.isDraggingTonearm = true;
             const currentRotation = parseFloat(elements.tonearmRotator.style.transform.replace('rotate(', '').replace('deg)', '')) || TONEARM_ANGLES.RESTING;
             const mouseAngle = utils.getAngleRelativeToPivot(clientX, clientY);
             state.tonearmDragStartAngle = mouseAngle - currentRotation;
             player.stopProgressAnimation();
-            elements.tonearmRotator.style.transition = 'none';
+            elements.tonearmRotator.style.transition = 'none'; // Disable transition for smooth drag
         },
-        handleTonearmMouseMove(e) { /* ... */
+
+        handleTonearmMouseMove(e) {
             if (!state.isDraggingTonearm) return;
             const { clientX, clientY } = utils.getEventCoords(e);
             const mouseAngle = utils.getAngleRelativeToPivot(clientX, clientY);
             let targetRotation = mouseAngle - state.tonearmDragStartAngle;
             targetRotation = Math.max(TONEARM_DRAG_LIMITS.MIN, Math.min(TONEARM_DRAG_LIMITS.MAX, targetRotation));
             elements.tonearmRotator.style.transform = `rotate(${targetRotation}deg)`;
+
+            // Update audio time based on functional range
             const progressRangeStart = TONEARM_ANGLES.RESTING;
             const progressRangeEnd = TONEARM_ANGLES.START;
             const progress = Math.max(0, Math.min(1, (targetRotation - progressRangeStart) / (progressRangeEnd - progressRangeStart)));
             const { duration } = elements.audioPlayer;
             if (duration && !isNaN(duration) && duration > 0) {
                 elements.audioPlayer.currentTime = progress * duration;
-                player.updateProgressBar();
+                player.updateProgressBar(); // Update visual progress bar and time displays
             }
         },
-        handleTonearmMouseUp(e) { /* ... */
-             if (!state.isDraggingTonearm) return;
+
+        handleTonearmMouseUp(e) {
+            if (!state.isDraggingTonearm) return;
             state.isDraggingTonearm = false;
-            elements.tonearmRotator.style.transition = '';
+            elements.tonearmRotator.style.transition = ''; // Re-enable CSS transitions
             const finalRotation = parseFloat(elements.tonearmRotator.style.transform.replace('rotate(', '').replace('deg)', '')) || TONEARM_ANGLES.RESTING;
+
+            // Snap based on proximity and manage play state
             if (Math.abs(finalRotation - TONEARM_ANGLES.START) < Math.abs(finalRotation - TONEARM_ANGLES.RESTING)) {
                 elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.START}deg)`;
-                if (!state.isPlaying) player.playAudio();
-                else player.startProgressAnimation();
+                if (!state.isPlaying) { // Play only if wasn't already playing
+                    player.playAudio();
+                } else {
+                    // Ensure animation resumes if was playing
+                    player.startProgressAnimation();
+                }
             } else {
                 elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.RESTING}deg)`;
-                if (state.isPlaying) player.pauseAudio();
+                if (state.isPlaying) { // Pause only if was playing
+                    player.pauseAudio();
+                }
             }
         },
-        handleProgressMouseDown(e) { /* ... */
-            if (state.isLoading || state.hasError || state.isEmpty) return;
-            e.preventDefault();
-            state.isDraggingProgress = true;
-            state.wasPlayingBeforeDrag = state.isPlaying;
-            player.stopProgressAnimation();
-            if (state.wasPlayingBeforeDrag) {
-               elements.audioPlayer.pause(); // Pause directly
-            }
-            player.handleProgressDrag(e); // Update UI immediately
-        },
-        handleProgressMouseMove: utils.throttle((e) => { /* ... */
-             if (!state.isDraggingProgress) return;
-            player.handleProgressDrag(e);
-        }, 50),
 
-        // --- MODIFIED: handleProgressMouseUp ---
+        handleProgressMouseDown(e) {
+            if (state.isLoading || state.hasError || state.isEmpty) return;
+            e.preventDefault(); // Prevent text selection during drag
+            state.isDraggingProgress = true;
+            state.wasPlayingBeforeDrag = state.isPlaying; // Store state *before* potential pause
+            player.stopProgressAnimation(); // Stop visual updates from animation frame
+
+            // Pause only if playing, to avoid triggering 'play' event later if wasn't playing
+            if (state.wasPlayingBeforeDrag) {
+               elements.audioPlayer.pause(); // This will trigger 'pause' event
+            }
+            // Update position immediately based on initial click/touch
+            player.handleProgressDrag(e);
+        },
+
+        handleProgressMouseMove: utils.throttle((e) => {
+             if (!state.isDraggingProgress) return;
+            player.handleProgressDrag(e); // Update time and visuals during drag
+        }, 50), // Throttle updates
+
         handleProgressMouseUp(e) {
             if (!state.isDraggingProgress) return;
-            state.isDraggingProgress = false;
+            state.isDraggingProgress = false; // Set state FIRST
 
             // Ensure final position is visually updated (even if throttled)
-            player.handleProgressDrag(e);
+            player.handleProgressDrag(e); // Final currentTime update
 
             // If it was playing before, attempt to resume with a slight delay
             if (state.wasPlayingBeforeDrag) {
-                // Use setTimeout to allow state to settle after drag/currentTime updates
+                // Use setTimeout to allow state/UI to settle after drag/currentTime updates
                 setTimeout(() => {
-                    // Double-check the element is actually paused and no error occurred
-                    if (elements.audioPlayer.paused && !state.hasError) {
+                    // Double-check the element is actually paused and no error/loading occurred
+                    if (elements.audioPlayer.paused && !state.hasError && !state.isLoading) {
                         // console.log("Resuming playback after progress drag (via direct play).");
                         const resumePromise = elements.audioPlayer.play();
                         if (resumePromise !== undefined) {
@@ -770,40 +756,52 @@
                                 if (error.name !== 'AbortError') {
                                     player.handleAudioError(error, state.currentTrackIndex);
                                 }
-                                // Ensure UI reflects actual paused state if resume fails
-                                if (state.isPlaying) { // Check if state thinks it's playing
-                                     state.isPlaying = false; // Correct the state
-                                     player.updateButtonUI(false);
-                                     player.updateVisuals(false);
-                                }
+                                // Ensure UI reflects actual state if resume fails
+                                if (state.isPlaying) { state.isPlaying = false; } // Correct the state
+                                player.updateButtonUI(false);
+                                player.updateVisuals(false);
                             });
                         }
                     } else {
-                         // console.log("Audio not resuming: Already playing or error present.");
-                         // If it's somehow playing again already (e.g. very fast interaction), ensure animation starts
-                         if (state.isPlaying) {
-                             player.startProgressAnimation();
-                         }
+                         // console.log("Audio not resuming: Already playing or error/loading present.");
+                         // If somehow playing again, ensure animation starts
+                         if (state.isPlaying) { player.startProgressAnimation(); }
                     }
-                }, 10); // Small delay (10ms) seems sufficient usually
+                }, 10); // Small delay
+            } else {
+                 // console.log("Ended progress drag while paused.");
+                 // If paused, ensure tonearm reflects final position
+                 const { duration, currentTime } = elements.audioPlayer;
+                 if (duration > 0) {
+                    const progress = currentTime / duration;
+                    const targetAngle = TONEARM_ANGLES.RESTING + (TONEARM_ANGLES.START - TONEARM_ANGLES.RESTING) * progress;
+                    const clampedAngle = Math.max(TONEARM_ANGLES.RESTING, Math.min(TONEARM_ANGLES.START, targetAngle));
+                    elements.tonearmRotator.style.transform = `rotate(${clampedAngle}deg)`;
+                 }
             }
-            // Reset the flag regardless of whether play was attempted
+            // Reset the flag regardless
             state.wasPlayingBeforeDrag = false;
         },
-        // --- END MODIFICATION ---
 
-        handleProgressDrag(e) { /* ... */
+        handleProgressDrag(e) {
              const { duration } = elements.audioPlayer;
             if (!duration || isNaN(duration) || duration <= 0) return;
+
             const rect = elements.progressContainer.getBoundingClientRect();
             const { clientX } = utils.getEventCoords(e);
             const clickX = clientX - rect.left;
-            const progress = Math.min(1, Math.max(0, clickX / rect.width));
-            // This directly sets the time, potentially triggering internal browser events
-            elements.audioPlayer.currentTime = progress * duration;
-            // Update visuals immediately during drag for responsiveness
+            let progress = Math.min(1, Math.max(0, clickX / rect.width));
+
+            // Update audio time directly
+            // Avoid setting time if it's essentially the same to prevent potential glitches
+            if (Math.abs(elements.audioPlayer.currentTime - (progress * duration)) > 0.1) {
+               elements.audioPlayer.currentTime = progress * duration;
+            }
+
+            // Update visuals immediately during drag
             elements.progressBar.style.width = `${progress * 100}%`;
             elements.currentTimeDisplay.textContent = utils.formatTime(elements.audioPlayer.currentTime);
+            // Update ARIA attributes
             elements.progressContainer.setAttribute('aria-valuenow', Math.round(elements.audioPlayer.currentTime));
             elements.progressContainer.setAttribute('aria-valuetext', `当前 ${utils.formatTime(elements.audioPlayer.currentTime)} / 总时长 ${utils.formatTime(duration)}`);
         }
@@ -811,112 +809,172 @@
 
     // --- Event Listener Setup ---
     const setupEventListeners = () => {
-      elements.playPauseButton.addEventListener('click', player.togglePlayPause);
-      elements.prevButton.addEventListener('click', player.playPrevTrack);
-      elements.nextButton.addEventListener('click', player.playNextTrack);
+        // Buttons
+        elements.playPauseButton.addEventListener('click', player.togglePlayPause);
+        elements.prevButton.addEventListener('click', player.playPrevTrack);
+        elements.nextButton.addEventListener('click', player.playNextTrack);
 
-      // Progress Bar Interaction
-      elements.progressContainer.addEventListener('click', player.handleProgressClick);
-      elements.progressContainer.addEventListener('mousedown', player.handleProgressMouseDown);
-      elements.progressContainer.addEventListener('touchstart', player.handleProgressMouseDown, { passive: false });
+        // Progress Bar Interaction
+        elements.progressContainer.addEventListener('click', player.handleProgressClick);
+        elements.progressContainer.addEventListener('mousedown', player.handleProgressMouseDown);
+        elements.progressContainer.addEventListener('touchstart', player.handleProgressMouseDown, { passive: false });
 
-      // Tonearm Interaction
-      elements.tonearmBar.addEventListener('mousedown', player.handleTonearmMouseDown);
-      elements.tonearmBar.addEventListener('touchstart', player.handleTonearmMouseDown, { passive: false });
+        // Tonearm Interaction (Events on the bar element capture touches on pseudo-element)
+        elements.tonearmBar.addEventListener('mousedown', player.handleTonearmMouseDown);
+        elements.tonearmBar.addEventListener('touchstart', player.handleTonearmMouseDown, { passive: false });
 
-      // Document-level listeners for dragging
-      document.addEventListener('mousemove', (e) => {
-          player.handleProgressMouseMove(e); // Throttled
-          player.handleTonearmMouseMove(e); // Not throttled (usually smoother)
-      });
-      document.addEventListener('touchmove', (e) => {
-          if (state.isDraggingProgress) { player.handleProgressMouseMove(e); e.preventDefault(); }
-          if (state.isDraggingTonearm) { player.handleTonearmMouseMove(e); e.preventDefault(); }
-      }, { passive: false });
-      document.addEventListener('mouseup', (e) => {
-          player.handleProgressMouseUp(e);
-          player.handleTonearmMouseUp(e);
-      });
-      document.addEventListener('touchend', (e) => {
-          player.handleProgressMouseUp(e);
-          player.handleTonearmMouseUp(e);
-      });
-       document.addEventListener('touchcancel', (e) => {
-          player.handleProgressMouseUp(e);
-          player.handleTonearmMouseUp(e);
-      });
+        // Document-level listeners for dragging outside elements
+        document.addEventListener('mousemove', (e) => {
+            // Only call handlers if dragging is actually active
+            if (state.isDraggingProgress) player.handleProgressMouseMove(e);
+            if (state.isDraggingTonearm) player.handleTonearmMouseMove(e);
+        });
+        document.addEventListener('touchmove', (e) => {
+            // Prevent scroll ONLY when actively dragging one of the elements
+            if (state.isDraggingProgress) { player.handleProgressMouseMove(e); e.preventDefault(); }
+            if (state.isDraggingTonearm) { player.handleTonearmMouseMove(e); e.preventDefault(); }
+        }, { passive: false }); // Need passive:false to conditionally preventDefault
+        document.addEventListener('mouseup', (e) => {
+            // Call mouseup handlers only if relevant drag was active
+            if (state.isDraggingProgress) player.handleProgressMouseUp(e);
+            if (state.isDraggingTonearm) player.handleTonearmMouseUp(e);
+        });
+        document.addEventListener('touchend', (e) => {
+            if (state.isDraggingProgress) player.handleProgressMouseUp(e);
+            if (state.isDraggingTonearm) player.handleTonearmMouseUp(e);
+        });
+        document.addEventListener('touchcancel', (e) => { // Handle interrupted touches
+            if (state.isDraggingProgress) player.handleProgressMouseUp(e);
+            if (state.isDraggingTonearm) player.handleTonearmMouseUp(e);
+        });
 
-      // Keyboard Controls
-      document.addEventListener('keydown', (e) => { /* ... */
-         const activeEl = document.activeElement;
-        const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'BUTTON' || activeEl.isContentEditable);
-        if (e.code === 'Space' && !isInputFocused) {
-          e.preventDefault();
-          player.togglePlayPause();
-        }
-      });
+        // Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            const activeEl = document.activeElement;
+            const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'BUTTON' || activeEl.isContentEditable);
+            if (e.code === 'Space' && !isInputFocused) {
+                e.preventDefault();
+                player.togglePlayPause();
+            }
+        });
 
-      // --- Audio Element Events ---
-      elements.audioPlayer.addEventListener('play', () => {
-        state.isPlaying = true; // Update state FIRST
-        player.updateButtonUI(true);
-        player.updateVisuals(true);
-        player.startProgressAnimation();
-         if (state.isLoading) { player.setLoadingState(false); } // Hide loading if playing starts
-      });
-      elements.audioPlayer.addEventListener('pause', () => {
-        state.isPlaying = false; // Update state FIRST
-        // Update UI only if not paused temporarily by drag start
-        if (!state.isDraggingProgress) {
+        // --- Audio Element Events ---
+        elements.audioPlayer.addEventListener('play', () => {
+            // console.log("Audio event: play");
+            state.isPlaying = true; // Update state FIRST
+            player.updateButtonUI(true);
+            player.updateVisuals(true);
+            player.startProgressAnimation();
+            if (state.isLoading) { player.setLoadingState(false); } // Ensure loading indicator is off
+        });
+
+        elements.audioPlayer.addEventListener('pause', () => {
+            // console.log("Audio event: pause");
+            state.isPlaying = false; // Update state FIRST
+            // Update UI only if not paused temporarily by starting a progress drag
+            if (!state.isDraggingProgress) {
+                player.updateButtonUI(false);
+                player.updateVisuals(false);
+                player.stopProgressAnimation();
+            } else {
+                // If paused because drag started, ensure visuals reflect pause state immediately
+                player.updateButtonUI(false);
+                player.updateVisuals(false);
+                // console.log("Pause event during progress drag start - UI updated.");
+            }
+        });
+
+        elements.audioPlayer.addEventListener('ended', () => {
+            // console.log("Audio event: ended");
+            // Ensure state reflects ended playback before loading next track
+            state.isPlaying = false;
             player.updateButtonUI(false);
             player.updateVisuals(false);
             player.stopProgressAnimation();
-        }
-      });
-      elements.audioPlayer.addEventListener('ended', player.playNextTrack);
-      elements.audioPlayer.addEventListener('timeupdate', () => {
-          if (!state.isDraggingTonearm && !state.isDraggingProgress) {
-              player.updateProgressBar();
-          }
-      });
-      elements.audioPlayer.addEventListener('loadedmetadata', () => {
-        player.updateProgressBar();
-        player.setControlsEnabled(true);
-      });
-       elements.audioPlayer.addEventListener('waiting', () => {
-            if (state.isPlaying && !state.isLoading) { player.setLoadingState(true); }
-       });
-       elements.audioPlayer.addEventListener('playing', () => { // After waiting/seek resumes
-           if (state.isLoading) { player.setLoadingState(false); }
-           // Ensure state/UI matches if needed (e.g., if 'play' didn't fire)
-           if(!state.isPlaying) {
-                state.isPlaying = true;
-                player.updateButtonUI(true);
-                player.updateVisuals(true);
-           }
-           player.startProgressAnimation();
-       });
+            player.playNextTrack(); // Proceed to next track
+        });
 
-      // Album Art Error Fallback
-      elements.albumArt.addEventListener('error', () => { /* ... */
-        if (elements.albumArt.src && !elements.albumArt.src.includes("placeholder.com")) {
-            elements.albumArt.src = "https://via.placeholder.com/200?text=No+Cover";
-            elements.albumArt.alt = "无法加载封面";
-        }
-      });
+        elements.audioPlayer.addEventListener('timeupdate', () => {
+            // Update progress bar based on timeupdate only if not being dragged
+            if (!state.isDraggingTonearm && !state.isDraggingProgress) {
+                player.updateProgressBar();
+            }
+        });
+
+        elements.audioPlayer.addEventListener('loadedmetadata', () => {
+            // console.log("Audio event: loadedmetadata");
+            player.updateProgressBar(); // Update duration display
+            // Check if loading state needs to be cleared (might be handled by loadeddata too)
+            if (state.isLoading) {
+                // player.setLoadingState(false); // Let loadeddata handle this
+            }
+             // Ensure controls are enabled now that metadata is available
+            player.setControlsEnabled(true);
+        });
+
+        elements.audioPlayer.addEventListener('loadeddata', () => {
+            // console.log("Audio event: loadeddata");
+             // Can indicate readiness, especially if metadata loaded earlier
+            if (state.isLoading) {
+                player.setLoadingState(false);
+            }
+            player.setControlsEnabled(true); // Ensure enabled
+        });
+
+
+        elements.audioPlayer.addEventListener('waiting', () => { // Playback stopped for buffering
+            // console.log("Audio event: waiting (buffering)");
+            // Show loading only if it was supposed to be playing
+            if (state.isPlaying && !state.isLoading) {
+                player.setLoadingState(true);
+            }
+        });
+
+        elements.audioPlayer.addEventListener('playing', () => { // Playback resumed after buffering/seek
+            // console.log("Audio event: playing (resumed after waiting/seek)");
+            // Ensure loading indicator is hidden
+            if (state.isLoading) {
+                player.setLoadingState(false);
+            }
+            // Ensure state/UI matches playing (might be redundant if 'play' also fired)
+            if (!state.isPlaying) { state.isPlaying = true; } // Correct state if needed
+            player.updateButtonUI(true);
+            player.updateVisuals(true);
+            player.startProgressAnimation(); // Ensure animation restarts
+        });
+
+        // Global audio error handler
+        elements.audioPlayer.addEventListener('error', (e) => player.handleAudioError(e, state.currentTrackIndex));
+
+        // Album Art Error Fallback
+        elements.albumArt.addEventListener('error', () => {
+            if (elements.albumArt.src && !elements.albumArt.src.includes("placeholder.com")) {
+                elements.albumArt.src = "https://via.placeholder.com/200?text=No+Cover";
+                elements.albumArt.alt = "无法加载封面";
+            }
+        });
     };
 
     // --- Initialization ---
     const init = () => {
-      setupEventListeners();
-      player.setControlsEnabled(false);
-      if (!state.playlist || state.playlist.length === 0) { player.setEmptyState(true); }
-      else { player.setEmptyState(false); player.loadTrack(0, false); }
+        // console.log("Initializing player...");
+        setupEventListeners();
+        player.setControlsEnabled(false); // Initially disabled until loaded
+
+        if (!state.playlist || state.playlist.length === 0) {
+            player.setEmptyState(true);
+        } else {
+            player.setEmptyState(false); // Ensure empty state is off
+            player.loadTrack(0, false); // Load first track, don't autoplay
+        }
     };
 
     // Run init once DOM is ready
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); }
-    else { init(); }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init(); // DOMContentLoaded has already fired
+    }
 
   </script>
 </body>

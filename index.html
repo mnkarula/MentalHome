@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>黑胶唱片播放器 (最终优化版)</title>
+  <title>黑胶唱片播放器 (最终优化版 v4 - Drag Fix)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
@@ -27,6 +27,7 @@
       padding: 50px 15px;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      overscroll-behavior: none;
     }
 
     /* ---------------------- CSS变量与全局主题 ---------------------- */
@@ -37,7 +38,7 @@
       --color-accent: #2575fc;
       --color-base: #e6e2dc;
       --color-record: #1a1a1a;
-      --color-record-groove: #444;
+      --color-record-groove: #3a3a3a; /* Moiré Tweak */
       --color-error-bg: rgba(200, 50, 50, 0.85);
       --color-error-text: #fff;
       --shadow-light: rgba(255, 255, 255, 0.8);
@@ -78,7 +79,7 @@
       z-index: 0;
     }
 
-    /* ---------------------- 黑胶唱片样式 (已修改) ---------------------- */
+    /* ---------------------- 黑胶唱片样式 ---------------------- */
     .record {
       position: absolute;
       width: 95%;
@@ -87,14 +88,15 @@
       left: 2.5%;
       border-radius: 50%;
       background-color: var(--color-record);
+      /* Moiré Tweak 2 */
       background-image:
         radial-gradient(circle at center, #333 10%, transparent 50%),
         repeating-radial-gradient(
           circle at center,
           var(--color-record),
-          var(--color-record) 0.8px,
-          var(--color-record-groove) 0.8px,
-          var(--color-record-groove) 1.1px
+          var(--color-record) 0.7px,
+          var(--color-record-groove) 0.7px,
+          var(--color-record-groove) 4px
         );
       background-size: 100% 100%, 100% 100%;
       box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3),
@@ -108,17 +110,12 @@
       user-select: none;
       -webkit-user-drag: none;
 
-      /* --- 应用动画，但初始状态为暂停 --- */
       animation: spin 4s linear infinite;
       animation-play-state: paused;
     }
 
-    /* ---------------------- 黑胶唱片播放状态 (已修改) ---------------------- */
     .record.playing {
-      /* --- 控制动画运行 --- */
       animation-play-state: running;
-      /* --- 移除独立的动画定义，因为它已经在 .record 中定义 --- */
-      /* animation: spin 4s linear infinite; */
       box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3),
                   0 4px 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 255, 255, 0.08);
     }
@@ -151,35 +148,26 @@
       position: absolute;
       top: calc(50% - 135px);
       right: calc(50% - 135px);
-      width: 1px; /* Use base as reference point */
-      height: 1px;/* Use base as reference point */
+      width: 1px;
+      height: 1px;
       z-index: 10;
     }
     .tonearm-rotator {
       position: absolute;
       width: 180px;
       height: 20px;
-      bottom: -10px; /* Center pivot vertically */
-      left: -10px; /* Center pivot horizontally */
-      transform-origin: 10px 10px; /* Pivot point: middle of base */
+      bottom: -10px;
+      left: -10px;
+      transform-origin: 10px 10px;
       transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       z-index: 1;
       transform: rotate(70deg); /* Initial resting angle */
       will-change: transform;
     }
-    .tonearm-rotator.swing {
-      animation: tonearm-swing 4s ease-out;
-    }
-    @keyframes tonearm-swing {
-      0% { transform: rotate(70deg); }
-      50% { transform: rotate(110deg); }
-      70% { transform: rotate(95deg); }
-      100% { transform: rotate(100deg); }
-    }
     .tonearm-bar {
       position: absolute;
-      top: 6px; /* Position bar relative to pivot */
-      left: 10px; /* Start bar at pivot */
+      top: 6px;
+      left: 10px;
       width: 175px;
       height: 8px;
       background-color: #aaa;
@@ -220,20 +208,23 @@
     /* ---------------------- 进度条 ---------------------- */
     .progress-container {
       width: 100%;
-      height: 6px;
+      height: 10px;
       background-color: #e0dcd7;
-      border-radius: 3px;
+      border-radius: 5px;
       margin: 0.5rem 0 1rem;
       overflow: hidden;
       box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.15);
       cursor: pointer;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
     }
     .progress-bar {
       height: 100%;
       width: 0%;
       background: linear-gradient(to right, var(--color-secondary), var(--color-accent));
-      border-radius: 3px;
+      border-radius: 5px;
       transition: width 0.1s linear;
+      pointer-events: none;
     }
 
     /* ---------------------- 时间显示 ---------------------- */
@@ -255,19 +246,9 @@
       width: 100%;
       padding: 0 5px;
     }
-    .control-group {
-      display: flex;
-      align-items: center;
-    }
-    .prev-next-group {
-      gap: 15px;
-    }
-    .control-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
+    .control-group { display: flex; align-items: center; }
+    .prev-next-group { gap: 15px; }
+    .control-item { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .control-button {
       background: linear-gradient(145deg, var(--color-base), #fff);
       border: none;
@@ -281,18 +262,10 @@
       align-items: center;
       margin-bottom: 6px;
       border-radius: 50%;
+      touch-action: manipulation;
     }
-    .prev-next-group .control-button {
-      width: 52px;
-      height: 52px;
-      padding: 12px;
-    }
-    #play-pause-button {
-      width: 119px;
-      height: 52px;
-      padding: 12px 20px;
-      border-radius: 26px;
-    }
+    .prev-next-group .control-button { width: 52px; height: 52px; padding: 12px; }
+    #play-pause-button { width: 119px; height: 52px; padding: 12px 20px; border-radius: 26px; }
     .control-button:hover {
       background: linear-gradient(145deg, #fff, var(--color-base));
       color: #333;
@@ -304,69 +277,41 @@
       transform: translateY(1px);
       color: #444;
     }
-    .control-button:focus-visible {
-      outline: 2px solid var(--focus-outline-color);
-      outline-offset: 2px;
-    }
-    .control-label {
-      font-size: 0.7rem;
-      color: #777;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      line-height: 1.2;
-    }
-    .control-button svg {
-      width: 20px;
-      height: 20px;
-      display: block;
-      fill: currentColor;
-    }
+    .control-button:focus-visible { outline: 2px solid var(--focus-outline-color); outline-offset: 2px; }
+    .control-label { font-size: 0.7rem; color: #777; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
+    .control-button svg { width: 20px; height: 20px; display: block; fill: currentColor; }
     #play-pause-button .icon-pause { display: none; }
     #play-pause-button.playing .icon-play { display: none; }
     #play-pause-button.playing .icon-pause { display: inline-block; }
 
     /* ---------------------- 加载与错误指示 ---------------------- */
-    .loading-indicator,
-    .error-message {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 15;
-      display: none;
+    .loading-indicator, .error-message {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; display: none;
     }
     .loading-indicator {
-      width: 30px;
-      height: 30px;
-      border: 3px solid rgba(0, 0, 0, 0.2);
-      border-radius: 50%;
-      border-top-color: #666;
-      animation: spin 1s ease-in-out infinite;
+      width: 30px; height: 30px; border: 3px solid rgba(0, 0, 0, 0.2); border-radius: 50%; border-top-color: #666; animation: spin 1s ease-in-out infinite;
     }
     .error-message {
-      background-color: var(--color-error-bg);
-      color: var(--color-error-text);
-      padding: 8px 12px;
-      border-radius: 5px;
-      font-size: 0.85rem;
-      text-align: center;
-      max-width: 80%;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      background-color: var(--color-error-bg); color: var(--color-error-text); padding: 8px 12px; border-radius: 5px; font-size: 0.85rem; text-align: center; max-width: 80%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     .vinyl-player-wrapper.loading .loading-indicator { display: block; }
     .vinyl-player-wrapper.error .error-message { display: block; }
     .vinyl-player-wrapper.empty .error-message { display: block; }
 
     /* ---------------------- 响应式适配 ---------------------- */
-    @media (max-width: 480px) {
+    @media (max-width: 480px) { /* Styles for 480px and below */ }
+    @media (max-width: 360px) { /* Styles for 360px and below */ }
+    /* (Keeping responsive styles collapsed for brevity) */
+     @media (max-width: 480px) {
       body { padding: 30px 10px; }
       .vinyl-player-wrapper { width: 260px; height: 260px; margin-bottom: 2rem; }
       .tonearm { top: calc(50% - 120px); right: calc(50% - 120px); }
-      .tonearm-rotator { width: 120px; /* Adjusted */ height: 16px; bottom: -8px; left: -8px; transform-origin: 8px 8px;}
-      .tonearm-bar { width: 110px; left: 8px; /* Adjusted */ top: 4px; height: 6px; border-radius: 3px; }
+      .tonearm-rotator { width: 150px; height: 16px; bottom: -8px; left: -8px; transform-origin: 8px 8px;}
+      .tonearm-bar { width: 140px; left: 8px; top: 4px; height: 6px; border-radius: 3px; }
       .song-info h2 { font-size: 1.1rem; }
       .song-info h4 { font-size: 0.85rem; }
+      .progress-container { height: 8px; border-radius: 4px; }
+      .progress-bar { border-radius: 4px; }
       .prev-next-group { gap: 10px; }
       .prev-next-group .control-button { width: 46px; height: 46px; padding: 10px; }
       #play-pause-button { width: 102px; height: 46px; padding: 10px 15px; border-radius: 23px; }
@@ -376,8 +321,8 @@
     @media (max-width: 360px) {
       .vinyl-player-wrapper { width: 220px; height: 220px; }
       .tonearm { top: calc(50% - 105px); right: calc(50% - 105px); }
-      .tonearm-rotator { width: 105px; /* Adjusted */ height: 14px; bottom: -7px; left: -7px; transform-origin: 7px 7px;}
-      .tonearm-bar { width: 95px; left: 7px; /* Adjusted */ top: 4px; height: 6px; border-radius: 3px;}
+      .tonearm-rotator { width: 125px; height: 14px; bottom: -7px; left: -7px; transform-origin: 7px 7px;}
+      .tonearm-bar { width: 115px; left: 7px; top: 4px; height: 6px; border-radius: 3px;}
       .controls { padding: 0; }
       .prev-next-group { gap: 8px; }
       .prev-next-group .control-button { width: 42px; height: 42px; padding: 9px; }
@@ -389,13 +334,13 @@
 <body>
   <div class="container">
     <div class="player-section">
-      <!-- 播放器视觉区域 -->
+      <!-- Visuals -->
       <div class="vinyl-player-wrapper" id="player-wrapper">
         <div class="player-base"></div>
         <div class="record" id="record">
           <img id="album-art" src="" alt="唱片封面">
         </div>
-        <div class="tonearm" id="tonearm-base"> <!-- Base for positioning and angle calculation -->
+        <div class="tonearm" id="tonearm-base">
           <div class="tonearm-rotator" id="tonearm-rotator">
             <div class="tonearm-bar"></div>
           </div>
@@ -404,31 +349,22 @@
         <div class="error-message" id="error-message">音频加载失败</div>
       </div>
 
-      <!-- 隐藏的音频元素 -->
-      <audio id="audio-player" preload="metadata">
-        您的浏览器不支持音频元素。
-      </audio>
+      <!-- Audio Element -->
+      <audio id="audio-player" preload="metadata">您的浏览器不支持音频元素。</audio>
 
-      <!-- 歌曲信息展示 -->
+      <!-- Info & Controls -->
       <div class="song-info">
         <h2 id="song-title">加载中...</h2>
         <h4 id="song-artist"></h4>
       </div>
-
-      <!-- 进度条 -->
       <div class="progress-container" id="progress-container" role="slider" aria-label="歌曲进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="progress-bar" id="progress-bar"></div>
       </div>
-
-      <!-- 时间显示 -->
       <div class="time-display">
         <span id="current-time">0:00</span>
         <span id="duration">0:00</span>
       </div>
-
-      <!-- 控制按钮 -->
       <div class="controls">
-        <!-- 播放/暂停 -->
         <div class="control-group play-group">
           <div class="control-item">
             <button id="play-pause-button" class="control-button" aria-label="播放">
@@ -438,8 +374,6 @@
             <span class="control-label" id="play-pause-label">播放</span>
           </div>
         </div>
-
-        <!-- 上一曲/下一曲 -->
         <div class="control-group prev-next-group">
           <div class="control-item">
             <button id="prev-button" class="control-button" aria-label="上一首">
@@ -458,515 +392,532 @@
     </div>
   </div>
 
-  <!-- JavaScript模块化代码 (保持不变) -->
   <script type="module">
-    // 常量定义
-    const TONEARM_ANGLES = { RESTING: 70, START: 100 }; // Resting and playing angles
-    const TONEARM_DRAG_LIMITS = { MIN: 65, MAX: 110 }; // Allowed drag range (degrees)
-    const LOAD_TRACK_DELAY = 150;
+    // Constants
+    const TONEARM_ANGLES = { RESTING: 70, START: 100 };
+    const TONEARM_DRAG_LIMITS = { MIN: 65, MAX: 110 };
 
-    // DOM元素缓存
-    const elements = {
-      audioPlayer: document.getElementById('audio-player'),
-      playPauseButton: document.getElementById('play-pause-button'),
-      playPauseLabel: document.getElementById('play-pause-label'),
-      record: document.getElementById('record'),
-      tonearmBase: document.getElementById('tonearm-base'), // Reference for pivot point
-      tonearmRotator: document.getElementById('tonearm-rotator'),
-      tonearmBar: document.querySelector('.tonearm-bar'),
-      prevButton: document.getElementById('prev-button'),
-      nextButton: document.getElementById('next-button'),
-      albumArt: document.getElementById('album-art'),
-      songTitle: document.getElementById('song-title'),
-      songArtist: document.getElementById('song-artist'),
-      progressContainer: document.getElementById('progress-container'),
-      progressBar: document.getElementById('progress-bar'),
-      currentTimeDisplay: document.getElementById('current-time'),
-      durationDisplay: document.getElementById('duration'),
-      loadingIndicator: document.querySelector('.loading-indicator'),
-      errorMessage: document.getElementById('error-message'),
-      playerWrapper: document.getElementById('player-wrapper')
+    // DOM Elements Cache
+    const elements = { /* (Keeping collapsed for brevity) */
+        audioPlayer: document.getElementById('audio-player'),
+        playPauseButton: document.getElementById('play-pause-button'),
+        playPauseLabel: document.getElementById('play-pause-label'),
+        record: document.getElementById('record'),
+        tonearmBase: document.getElementById('tonearm-base'),
+        tonearmRotator: document.getElementById('tonearm-rotator'),
+        tonearmBar: document.querySelector('.tonearm-bar'),
+        prevButton: document.getElementById('prev-button'),
+        nextButton: document.getElementById('next-button'),
+        albumArt: document.getElementById('album-art'),
+        songTitle: document.getElementById('song-title'),
+        songArtist: document.getElementById('song-artist'),
+        progressContainer: document.getElementById('progress-container'),
+        progressBar: document.getElementById('progress-bar'),
+        currentTimeDisplay: document.getElementById('current-time'),
+        durationDisplay: document.getElementById('duration'),
+        loadingIndicator: document.querySelector('.loading-indicator'),
+        errorMessage: document.getElementById('error-message'),
+        playerWrapper: document.getElementById('player-wrapper')
     };
 
-    // 播放器状态管理
-    const state = {
-      isPlaying: false,
-      isLoading: false,
-      hasError: false,
-      isEmpty: false,
-      currentTrackIndex: 0,
-      progressAnimId: null,
-      isDraggingTonearm: false, // Renamed for clarity
-      tonearmDragStartAngle: 0, // Initial angle offset when drag starts
-      playlist: [
-        {
-          title: "SoundHelix 歌曲 1",
-          artist: "SoundHelix",
-          audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-          albumArt: "https://picsum.photos/seed/song1/200/200"
+    // Player State
+    const state = { /* (Keeping collapsed for brevity) */
+        isPlaying: false, isLoading: false, hasError: false, isEmpty: false,
+        currentTrackIndex: 0, progressAnimId: null, isDraggingTonearm: false,
+        tonearmDragStartAngle: 0, isDraggingProgress: false, wasPlayingBeforeDrag: false,
+        playlist: [
+            { title: "SoundHelix Song 1", artist: "SoundHelix", audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", albumArt: "https://picsum.photos/seed/song1/200/200" },
+            { title: "SoundHelix Song 2", artist: "SoundHelix", audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", albumArt: "https://picsum.photos/seed/song2/200/200" },
+            { title: "SoundHelix Song 3", artist: "SoundHelix", audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", albumArt: "https://picsum.photos/seed/song3/200/200" }
+        ]
+    };
+
+    // Utility Functions
+    const utils = { /* (Keeping collapsed for brevity) */
+        formatTime: (seconds) => { /* ... */
+            const time = Math.max(0, seconds || 0);
+            const minutes = Math.floor(time / 60);
+            const secs = Math.floor(time % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
         },
-        {
-          title: "SoundHelix 歌曲 2",
-          artist: "SoundHelix",
-          audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-          albumArt: "https://picsum.photos/seed/song2/200/200"
-        },
-        {
-          title: "SoundHelix 歌曲 3",
-          artist: "SoundHelix",
-          audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-          albumArt: "https://picsum.photos/seed/song3/200/200"
-        }
-      ]
-    };
-
-    // 工具函数
-    const utils = {
-      formatTime: (seconds) => {
-        const time = Math.max(0, seconds || 0);
-        const minutes = Math.floor(time / 60);
-        const secs = Math.floor(time % 60);
-        return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
-      },
-      throttle: (func, limit) => {
-        let inThrottle;
-        return function(...args) {
-          if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-          }
-        }
-      },
-      // Helper to get angle relative to the tonearm pivot
-      getAngleRelativeToPivot: (clientX, clientY) => {
-          const rect = elements.tonearmBase.getBoundingClientRect();
-          // Calculate pivot coordinates relative to viewport
-          // Note: transform-origin is 10px 10px within the rotator, which is positioned relative to tonearm-base
-          const pivotX = rect.left + 10;
-          const pivotY = rect.top + 10;
-          // Calculate angle using atan2
-          const angleRad = Math.atan2(clientY - pivotY, clientX - pivotX);
-          // Convert to degrees and adjust offset if necessary (e.g., if 0 degrees isn't pointing right)
-          let angleDeg = angleRad * (180 / Math.PI);
-          // You might need to adjust angleDeg based on your visual setup if 0 doesn't align with expected horizontal
-          return angleDeg;
-      }
-    };
-
-    // 播放器核心逻辑
-    const player = {
-      setLoadingState(isLoading) {
-        state.isLoading = isLoading;
-        elements.playerWrapper.classList.toggle('loading', isLoading);
-        if (isLoading) player.setErrorState(false);
-        player.setControlsEnabled(!isLoading && !state.hasError && !state.isEmpty);
-      },
-
-      setErrorState(hasError, message = "音频加载失败") {
-        state.hasError = hasError;
-        elements.playerWrapper.classList.toggle('error', hasError);
-        if (hasError) {
-          elements.errorMessage.textContent = message;
-          player.setLoadingState(false);
-          player.updateVisuals(false);
-          player.updateButtonUI(false);
-        }
-      },
-
-      setEmptyState(isEmpty) {
-        state.isEmpty = isEmpty;
-        elements.playerWrapper.classList.toggle('empty', isEmpty);
-        if (isEmpty) {
-          elements.errorMessage.textContent = "播放列表为空";
-          elements.songTitle.textContent = "无歌曲";
-          elements.songArtist.textContent = "";
-          elements.albumArt.src = "https://via.placeholder.com/200?text=Empty";
-          player.setControlsEnabled(false);
-        }
-      },
-
-      setControlsEnabled(enabled) {
-        elements.playPauseButton.disabled = !enabled;
-        elements.prevButton.disabled = !enabled;
-        elements.nextButton.disabled = !enabled;
-        elements.progressContainer.style.pointerEvents = enabled ? 'auto' : 'none';
-        elements.tonearmBar.style.pointerEvents = enabled ? 'auto' : 'none';
-        elements.tonearmBar.style.cursor = enabled ? 'pointer' : 'default';
-      },
-
-      updateButtonUI(isPlaying) {
-        state.isPlaying = isPlaying;
-        elements.playPauseButton.classList.toggle('playing', isPlaying);
-        elements.playPauseLabel.textContent = isPlaying ? '暂停' : '播放';
-        elements.playPauseButton.setAttribute('aria-label', isPlaying ? '暂停' : '播放');
-      },
-
-      updateVisuals(isPlaying) {
-        // --- 这个逻辑保持不变 ---
-        // 切换 playing 类会通过 CSS 控制 animation-play-state
-        elements.record.classList.toggle('playing', isPlaying);
-        // -------------------------
-
-        if (!state.isDraggingTonearm) { // Only update tonearm if not currently being dragged
-            if (isPlaying) {
-                // Use animation only when starting play, not resuming
-                if (!elements.tonearmRotator.style.transform || parseFloat(elements.tonearmRotator.style.transform.replace('rotate(', '').replace('deg)', '')) < TONEARM_ANGLES.START - 5) {
-                   elements.tonearmRotator.classList.add('swing');
-                   elements.tonearmRotator.addEventListener('animationend', () => {
-                       elements.tonearmRotator.classList.remove('swing');
-                       // Ensure final position after animation
-                       if (state.isPlaying) { // Double check state in case it changed during animation
-                           elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.START}deg)`;
-                       }
-                   }, { once: true });
-                } else {
-                     // If already near play position, just set it directly
-                     elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.START}deg)`;
-                }
-            } else {
-                elements.tonearmRotator.classList.remove('swing'); // Ensure animation is removed
-                elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.RESTING}deg)`;
+        throttle: (func, limit) => { /* ... */
+            let inThrottle;
+            return function(...args) {
+              if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+              }
             }
+        },
+        getAngleRelativeToPivot: (clientX, clientY) => { /* ... */
+            const rect = elements.tonearmBase.getBoundingClientRect();
+            let pivotOffsetX = 10, pivotOffsetY = 10;
+            if (window.innerWidth <= 480 && window.innerWidth > 360) { pivotOffsetX = 8; pivotOffsetY = 8; }
+            else if (window.innerWidth <= 360) { pivotOffsetX = 7; pivotOffsetY = 7; }
+            const pivotX = rect.left + pivotOffsetX;
+            const pivotY = rect.top + pivotOffsetY;
+            const angleRad = Math.atan2(clientY - pivotY, clientX - pivotX);
+            return angleRad * (180 / Math.PI);
+        },
+        getEventCoords: (e) => { /* ... */
+            if (e.touches && e.touches.length > 0) return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+            if (e.changedTouches && e.changedTouches.length > 0) return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
+            return { clientX: e.clientX, clientY: e.clientY };
         }
-      },
+    };
 
-      updateProgressBar() {
-        const { duration, currentTime } = elements.audioPlayer;
-        const isValid = duration && !isNaN(duration) && duration > 0;
-        const progress = isValid ? currentTime / duration : 0;
+    // Player Logic
+    const player = {
+        // State Setters (Loading, Error, Empty, Controls Enabled)
+        setLoadingState(isLoading) { /* ... */
+            if (state.isLoading === isLoading) return;
+            state.isLoading = isLoading;
+            elements.playerWrapper.classList.toggle('loading', isLoading);
+            if (isLoading) player.setErrorState(false);
+            player.setControlsEnabled(!isLoading && !state.hasError && !state.isEmpty);
+        },
+        setErrorState(hasError, message = "音频加载失败") { /* ... */
+            state.hasError = hasError;
+            elements.playerWrapper.classList.toggle('error', hasError);
+            if (hasError) {
+              elements.errorMessage.textContent = message;
+              player.setLoadingState(false);
+              if (state.isPlaying) {
+                state.isPlaying = false;
+                player.updateButtonUI(false);
+                player.updateVisuals(false);
+                player.stopProgressAnimation();
+              }
+            }
+            player.setControlsEnabled(!state.isLoading && !hasError && !state.isEmpty);
+        },
+        setEmptyState(isEmpty) { /* ... */
+             state.isEmpty = isEmpty;
+            elements.playerWrapper.classList.toggle('empty', isEmpty);
+            if (isEmpty) {
+              elements.errorMessage.textContent = "播放列表为空";
+              elements.songTitle.textContent = "无歌曲";
+              elements.songArtist.textContent = "";
+              elements.albumArt.src = "https://via.placeholder.com/200?text=Empty";
+              if (state.isPlaying) {
+                 state.isPlaying = false;
+                 player.updateButtonUI(false);
+                 player.updateVisuals(false);
+                 player.stopProgressAnimation();
+              }
+            }
+            player.setControlsEnabled(!state.isLoading && !state.hasError && !isEmpty);
+        },
+        setControlsEnabled(enabled) { /* ... */
+            const effectiveEnabled = enabled && !state.isLoading && !state.hasError && !state.isEmpty;
+            if (elements.playPauseButton.disabled === effectiveEnabled) { // Check if update needed
+              elements.playPauseButton.disabled = !effectiveEnabled;
+              elements.prevButton.disabled = !effectiveEnabled;
+              elements.nextButton.disabled = !effectiveEnabled;
+              const pointerEvents = effectiveEnabled ? 'auto' : 'none';
+              const cursor = effectiveEnabled ? 'pointer' : 'default';
+              elements.progressContainer.style.pointerEvents = pointerEvents;
+              elements.progressContainer.style.cursor = cursor;
+              elements.tonearmBar.style.pointerEvents = pointerEvents;
+              elements.tonearmBar.style.cursor = cursor;
+            }
+        },
 
-        elements.progressBar.style.width = `${progress * 100}%`;
-        elements.currentTimeDisplay.textContent = utils.formatTime(currentTime);
-        elements.durationDisplay.textContent = utils.formatTime(duration);
-        elements.progressContainer.setAttribute('aria-valuenow', isValid ? currentTime.toFixed(0) : 0);
-        elements.progressContainer.setAttribute('aria-valuemax', isValid ? duration.toFixed(0) : 100);
-        elements.progressContainer.setAttribute('aria-valuetext', `当前 ${utils.formatTime(currentTime)} / 总时长 ${utils.formatTime(duration)}`);
-      },
+        // UI Updaters
+        updateButtonUI(isPlaying) { /* ... */
+            elements.playPauseButton.classList.toggle('playing', isPlaying);
+            elements.playPauseLabel.textContent = isPlaying ? '暂停' : '播放';
+            elements.playPauseButton.setAttribute('aria-label', isPlaying ? '暂停' : '播放');
+        },
+        updateVisuals(isPlaying) { /* ... */
+            elements.record.classList.toggle('playing', isPlaying);
+            if (!state.isDraggingTonearm) {
+              const targetAngle = isPlaying ? TONEARM_ANGLES.START : TONEARM_ANGLES.RESTING;
+              elements.tonearmRotator.style.transform = `rotate(${targetAngle}deg)`;
+            }
+        },
+        updateProgressBar() { /* ... */
+            const { duration, currentTime } = elements.audioPlayer;
+            const isValid = duration && !isNaN(duration) && duration > 0;
+            const progress = isValid ? currentTime / duration : 0;
+            if (!state.isDraggingProgress) {
+                elements.progressBar.style.width = `${progress * 100}%`;
+            }
+            elements.currentTimeDisplay.textContent = utils.formatTime(currentTime);
+            elements.durationDisplay.textContent = utils.formatTime(duration);
+            elements.progressContainer.setAttribute('aria-valuenow', isValid ? Math.round(currentTime) : 0);
+            elements.progressContainer.setAttribute('aria-valuemax', isValid ? Math.round(duration) : 100);
+            elements.progressContainer.setAttribute('aria-valuetext', `当前 ${utils.formatTime(currentTime)} / 总时长 ${utils.formatTime(duration)}`);
+        },
 
-      startProgressAnimation() {
-          player.stopProgressAnimation(); // Ensure no duplicates
-          function animationStep() {
-              if (state.isPlaying && !state.isDraggingTonearm) { // Only update if playing and not dragging
+        // Progress Animation
+        startProgressAnimation() { /* ... */
+            player.stopProgressAnimation();
+            function animationStep() {
+              if (state.isPlaying && !state.isDraggingTonearm && !state.isDraggingProgress) {
                   player.updateProgressBar();
                   state.progressAnimId = requestAnimationFrame(animationStep);
               }
-          }
-          state.progressAnimId = requestAnimationFrame(animationStep);
-      },
-
-      stopProgressAnimation() {
-        if (state.progressAnimId) {
-          cancelAnimationFrame(state.progressAnimId);
-          state.progressAnimId = null;
-        }
-      },
-
-      loadTrack(trackIndex, autoPlay = false) {
-        if (state.isEmpty || trackIndex < 0 || trackIndex >= state.playlist.length) return;
-
-        player.setLoadingState(true);
-        state.currentTrackIndex = trackIndex;
-        const track = state.playlist[trackIndex];
-
-        elements.songTitle.textContent = track.title;
-        elements.songArtist.textContent = track.artist;
-        elements.audioPlayer.src = track.audioSrc;
-
-        const img = new Image();
-        img.onload = () => {
-          elements.albumArt.src = img.src;
-          elements.albumArt.alt = `封面: ${track.title}`;
-        };
-        img.onerror = () => {
-          elements.albumArt.src = "https://via.placeholder.com/200?text=No+Cover";
-          elements.albumArt.alt = "无法加载封面";
-        };
-        img.src = track.albumArt || "";
-
-        elements.audioPlayer.load();
-        elements.audioPlayer.currentTime = 0;
-        player.updateProgressBar(); // Reset progress bar visually
-        player.updateVisuals(false); // Reset tonearm position
-
-        const canPlayHandler = () => {
-          player.setLoadingState(false);
-          // Update duration display once metadata is loaded
-          player.updateProgressBar();
-          if (autoPlay) player.playAudio();
-        };
-        elements.audioPlayer.removeEventListener('canplay', canPlayHandler); // Ensure no duplicates
-        elements.audioPlayer.addEventListener('canplay', canPlayHandler, { once: true });
-      },
-
-      playAudio() {
-        if (state.hasError || state.isLoading || state.isEmpty || state.isPlaying) return;
-
-        player.setLoadingState(true);
-        setTimeout(() => { // Short delay for visual effect
-          elements.audioPlayer.play().then(() => {
-            player.setLoadingState(false);
-            player.updateButtonUI(true);
-            player.updateVisuals(true); // This will toggle the .playing class on record
-            player.startProgressAnimation();
-          }).catch(error => {
-            console.error("Playback error:", error);
-            player.setErrorState(true, `播放错误: ${error.message || '播放被阻止'}`);
-            player.updateVisuals(false); // Reset visuals on error
-          });
-        }, LOAD_TRACK_DELAY);
-      },
-
-      pauseAudio() {
-        if (!state.isPlaying) return;
-        elements.audioPlayer.pause();
-        player.updateButtonUI(false);
-        player.updateVisuals(false); // This will toggle the .playing class off record
-        player.stopProgressAnimation();
-      },
-
-      playNextTrack() {
-        const nextIndex = (state.currentTrackIndex + 1) % state.playlist.length;
-        player.loadTrack(nextIndex, true);
-      },
-
-      playPrevTrack() {
-        // Go to previous track if near beginning, otherwise restart current track
-        if (elements.audioPlayer.currentTime < 3) {
-          const prevIndex = (state.currentTrackIndex - 1 + state.playlist.length) % state.playlist.length;
-          player.loadTrack(prevIndex, true);
-        } else {
-          elements.audioPlayer.currentTime = 0;
-          player.updateProgressBar();
-          // No need to call playAudio() if already playing, just let timeupdate handle it
-          if (!state.isPlaying) {
-             player.playAudio(); // Start playing if paused
-          } else {
-             // Ensure progress animation restarts if it was stopped by seeking
-             player.startProgressAnimation();
-          }
-        }
-      },
-
-      handleProgressClick(e) {
-        const { duration } = elements.audioPlayer;
-        if (!duration || isNaN(duration) || duration <= 0 || state.isLoading || state.hasError || state.isEmpty) return;
-
-        const rect = elements.progressContainer.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickProgress = Math.min(1, Math.max(0, clickX / rect.width));
-        elements.audioPlayer.currentTime = clickProgress * duration;
-        player.updateProgressBar(); // Immediately update UI
-        if (!state.isPlaying) { // If paused, update visuals to match time
-             const targetAngle = TONEARM_ANGLES.RESTING + (TONEARM_ANGLES.START - TONEARM_ANGLES.RESTING) * clickProgress;
-             // Clamp angle just in case
-             const clampedAngle = Math.max(TONEARM_ANGLES.RESTING, Math.min(TONEARM_ANGLES.START, targetAngle));
-             elements.tonearmRotator.style.transform = `rotate(${clampedAngle}deg)`;
-        }
-      },
-
-      togglePlayPause() {
-        if (state.isLoading || state.hasError || state.isEmpty) return;
-        state.isPlaying ? player.pauseAudio() : player.playAudio();
-      },
-
-      // --- Tonearm Drag Handlers ---
-      handleTonearmMouseDown(e) {
-        e.preventDefault(); // Prevent text selection/default drag behavior
-        if (state.isLoading || state.hasError || state.isEmpty) return;
-
-        state.isDraggingTonearm = true;
-        // Calculate the difference between the current mouse angle and the current rotation angle
-        // This allows dragging to start smoothly from the current arm position
-        const currentRotation = parseFloat(elements.tonearmRotator.style.transform.replace('rotate(', '').replace('deg)', '')) || TONEARM_ANGLES.RESTING;
-        const mouseAngle = utils.getAngleRelativeToPivot(e.clientX, e.clientY);
-        state.tonearmDragStartAngle = mouseAngle - currentRotation;
-
-        player.stopProgressAnimation(); // Pause progress updates while dragging
-        elements.tonearmRotator.classList.remove('swing'); // Stop animation if active
-        elements.tonearmRotator.style.transition = 'none'; // Disable transition for smooth dragging
-
-        // Optional: Pause audio immediately when starting drag
-        // if (state.isPlaying) {
-        //   elements.audioPlayer.pause();
-        // }
-      },
-
-      handleTonearmMouseMove(e) {
-        if (!state.isDraggingTonearm) return;
-
-        const mouseAngle = utils.getAngleRelativeToPivot(e.clientX, e.clientY);
-        let targetRotation = mouseAngle - state.tonearmDragStartAngle;
-
-        // *** Clamp the target rotation angle ***
-        targetRotation = Math.max(TONEARM_DRAG_LIMITS.MIN, Math.min(TONEARM_DRAG_LIMITS.MAX, targetRotation));
-
-        elements.tonearmRotator.style.transform = `rotate(${targetRotation}deg)`;
-
-        // Update audio progress based on the dragged angle within the *functional* range (RESTING to START)
-        const progressRangeStart = TONEARM_ANGLES.RESTING;
-        const progressRangeEnd = TONEARM_ANGLES.START;
-        const progress = Math.max(0, Math.min(1,
-          (targetRotation - progressRangeStart) / (progressRangeEnd - progressRangeStart)
-        ));
-
-        const { duration } = elements.audioPlayer;
-        if (duration && !isNaN(duration) && duration > 0) {
-            elements.audioPlayer.currentTime = progress * duration;
-            player.updateProgressBar(); // Update visual progress bar and time displays
-        }
-      },
-
-      handleTonearmMouseUp(e) {
-        if (!state.isDraggingTonearm) return;
-
-        state.isDraggingTonearm = false;
-        elements.tonearmRotator.style.transition = ''; // Re-enable CSS transitions
-
-        // Decide final state based on drop position
-        const finalRotation = parseFloat(elements.tonearmRotator.style.transform.replace('rotate(', '').replace('deg)', '')) || TONEARM_ANGLES.RESTING;
-
-        // If dropped within the 'play' zone (e.g., > halfway between rest and start)
-        if (finalRotation >= (TONEARM_ANGLES.RESTING + TONEARM_ANGLES.START) / 2) {
-            // Snap to START angle smoothly and ensure playing
-            elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.START}deg)`;
-             if (!state.isPlaying) {
-                 player.playAudio(); // Start playing if it wasn't
-             } else {
-                 player.startProgressAnimation(); // Resume progress animation if it was already playing
-             }
-        } else {
-            // Snap back to RESTING angle smoothly and ensure paused
-            elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.RESTING}deg)`;
-            if (state.isPlaying) {
-                player.pauseAudio(); // Pause if it was playing
             }
+            if (state.isPlaying) {
+               state.progressAnimId = requestAnimationFrame(animationStep);
+            }
+        },
+        stopProgressAnimation() { /* ... */
+            if (state.progressAnimId) {
+              cancelAnimationFrame(state.progressAnimId);
+              state.progressAnimId = null;
+            }
+        },
+
+        // Core Playback Logic
+        loadTrack(trackIndex, autoPlay = false) { /* ... */
+            if (state.isEmpty || trackIndex < 0 || trackIndex >= state.playlist.length) {
+                if (state.playlist.length === 0) player.setEmptyState(true);
+                return;
+            }
+            player.stopProgressAnimation();
+            player.setLoadingState(true);
+            player.setErrorState(false);
+            state.currentTrackIndex = trackIndex;
+            const track = state.playlist[trackIndex];
+            elements.songTitle.textContent = track.title;
+            elements.songArtist.textContent = track.artist;
+            elements.albumArt.src = "https://via.placeholder.com/100?text=Load";
+            elements.albumArt.alt = "加载封面中...";
+            const img = new Image();
+            img.onload = () => { elements.albumArt.src = img.src; elements.albumArt.alt = `封面: ${track.title}`; };
+            img.onerror = () => { elements.albumArt.src = "https://via.placeholder.com/200?text=No+Cover"; elements.albumArt.alt = "无法加载封面"; };
+            img.src = track.albumArt || "https://via.placeholder.com/200?text=No+Cover";
+            if (!elements.audioPlayer.paused) {
+                elements.audioPlayer.pause();
+            }
+            state.isPlaying = false;
+            player.updateButtonUI(false);
+            player.updateVisuals(false);
+            elements.audioPlayer.src = track.audioSrc;
+            elements.audioPlayer.currentTime = 0;
+            elements.audioPlayer.load();
+            player.updateProgressBar();
+            const readyHandler = () => {
+                player.setLoadingState(false);
+                player.updateProgressBar();
+                player.setControlsEnabled(true);
+                if (autoPlay) {
+                    setTimeout(() => player.playAudio(), 50);
+                }
+            };
+            elements.audioPlayer.removeEventListener('loadeddata', player._currentReadyHandler);
+            elements.audioPlayer.removeEventListener('error', player._currentErrorHandler);
+            player._currentReadyHandler = readyHandler;
+            player._currentErrorHandler = (e) => player.handleAudioError(e, trackIndex);
+            elements.audioPlayer.addEventListener('loadeddata', player._currentReadyHandler, { once: true });
+            elements.audioPlayer.addEventListener('error', player._currentErrorHandler, { once: true });
+        },
+        handleAudioError(e, trackIndex) { /* ... */
+           const error = elements.audioPlayer.error;
+           let message = "音频加载/播放失败";
+           if (error) {
+             switch (error.code) {
+               case MediaError.MEDIA_ERR_NETWORK: message = "网络错误，无法加载"; break;
+               case MediaError.MEDIA_ERR_DECODE: message = "音频解码错误"; break;
+               case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: message = "音频格式不支持"; break;
+               default: message = `发生错误 (Code ${error.code})`;
+             }
+           }
+           if (state.currentTrackIndex === trackIndex && (!error || error.code !== MediaError.MEDIA_ERR_ABORTED)) {
+               player.setErrorState(true, message);
+           }
+        },
+        playAudio() { /* ... */
+            if (state.isPlaying || state.isLoading || state.hasError || state.isEmpty) { return; }
+            if (elements.audioPlayer.readyState < elements.audioPlayer.HAVE_FUTURE_DATA) {
+                player.setLoadingState(true);
+                 elements.audioPlayer.addEventListener('loadeddata', () => {
+                     if (!state.isPlaying && !state.hasError) { // Check again
+                        player.setLoadingState(false);
+                        player.playAudio();
+                     }
+                 }, { once: true });
+                return;
+            }
+            const playPromise = elements.audioPlayer.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(error => {
+                if (error.name !== 'AbortError') {
+                     player.handleAudioError(error, state.currentTrackIndex);
+                     // Ensure UI reflects actual state if play fails
+                     state.isPlaying = false;
+                     player.updateButtonUI(false);
+                     player.updateVisuals(false);
+                }
+              });
+            }
+        },
+        pauseAudio() { /* ... */
+             if (!state.isPlaying) return;
+            elements.audioPlayer.pause();
+        },
+        playNextTrack() { /* ... */
+             if (state.isEmpty) return;
+            const nextIndex = (state.currentTrackIndex + 1) % state.playlist.length;
+            player.loadTrack(nextIndex, true);
+        },
+        playPrevTrack() { /* ... */
+            if (state.isEmpty) return;
+            if (elements.audioPlayer.currentTime < 3) {
+              const prevIndex = (state.currentTrackIndex - 1 + state.playlist.length) % state.playlist.length;
+              player.loadTrack(prevIndex, true);
+            } else {
+              elements.audioPlayer.currentTime = 0;
+              if (!state.isPlaying) { player.playAudio(); }
+            }
+        },
+        togglePlayPause() { /* ... */
+             if (state.isLoading || state.hasError || state.isEmpty) return;
+            if (state.isPlaying) { player.pauseAudio(); }
+            else { player.playAudio(); }
+        },
+
+        // Interaction Handlers
+        handleProgressClick(e) { /* ... */
+            if (state.isLoading || state.hasError || state.isEmpty || state.isDraggingProgress) return;
+            const { duration } = elements.audioPlayer;
+            if (!duration || isNaN(duration) || duration <= 0) return;
+            const rect = elements.progressContainer.getBoundingClientRect();
+            const { clientX } = utils.getEventCoords(e);
+            const clickX = clientX - rect.left;
+            const clickProgress = Math.min(1, Math.max(0, clickX / rect.width));
+            elements.audioPlayer.currentTime = clickProgress * duration;
+            player.updateProgressBar();
+        },
+        handleTonearmMouseDown(e) { /* ... */
+             if (state.isLoading || state.hasError || state.isEmpty) return;
+            const { clientX, clientY } = utils.getEventCoords(e);
+            state.isDraggingTonearm = true;
+            const currentRotation = parseFloat(elements.tonearmRotator.style.transform.replace('rotate(', '').replace('deg)', '')) || TONEARM_ANGLES.RESTING;
+            const mouseAngle = utils.getAngleRelativeToPivot(clientX, clientY);
+            state.tonearmDragStartAngle = mouseAngle - currentRotation;
+            player.stopProgressAnimation();
+            elements.tonearmRotator.style.transition = 'none';
+        },
+        handleTonearmMouseMove(e) { /* ... */
+            if (!state.isDraggingTonearm) return;
+            const { clientX, clientY } = utils.getEventCoords(e);
+            const mouseAngle = utils.getAngleRelativeToPivot(clientX, clientY);
+            let targetRotation = mouseAngle - state.tonearmDragStartAngle;
+            targetRotation = Math.max(TONEARM_DRAG_LIMITS.MIN, Math.min(TONEARM_DRAG_LIMITS.MAX, targetRotation));
+            elements.tonearmRotator.style.transform = `rotate(${targetRotation}deg)`;
+            const progressRangeStart = TONEARM_ANGLES.RESTING;
+            const progressRangeEnd = TONEARM_ANGLES.START;
+            const progress = Math.max(0, Math.min(1, (targetRotation - progressRangeStart) / (progressRangeEnd - progressRangeStart)));
+            const { duration } = elements.audioPlayer;
+            if (duration && !isNaN(duration) && duration > 0) {
+                elements.audioPlayer.currentTime = progress * duration;
+                player.updateProgressBar();
+            }
+        },
+        handleTonearmMouseUp(e) { /* ... */
+             if (!state.isDraggingTonearm) return;
+            state.isDraggingTonearm = false;
+            elements.tonearmRotator.style.transition = '';
+            const finalRotation = parseFloat(elements.tonearmRotator.style.transform.replace('rotate(', '').replace('deg)', '')) || TONEARM_ANGLES.RESTING;
+            if (Math.abs(finalRotation - TONEARM_ANGLES.START) < Math.abs(finalRotation - TONEARM_ANGLES.RESTING)) {
+                elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.START}deg)`;
+                if (!state.isPlaying) player.playAudio();
+                else player.startProgressAnimation();
+            } else {
+                elements.tonearmRotator.style.transform = `rotate(${TONEARM_ANGLES.RESTING}deg)`;
+                if (state.isPlaying) player.pauseAudio();
+            }
+        },
+        handleProgressMouseDown(e) { /* ... */
+            if (state.isLoading || state.hasError || state.isEmpty) return;
+            e.preventDefault();
+            state.isDraggingProgress = true;
+            state.wasPlayingBeforeDrag = state.isPlaying;
+            player.stopProgressAnimation();
+            if (state.wasPlayingBeforeDrag) {
+               elements.audioPlayer.pause(); // Pause directly
+            }
+            player.handleProgressDrag(e); // Update UI immediately
+        },
+        handleProgressMouseMove: utils.throttle((e) => { /* ... */
+             if (!state.isDraggingProgress) return;
+            player.handleProgressDrag(e);
+        }, 50),
+
+        // --- MODIFIED: handleProgressMouseUp ---
+        handleProgressMouseUp(e) {
+            if (!state.isDraggingProgress) return;
+            state.isDraggingProgress = false;
+
+            // Ensure final position is visually updated (even if throttled)
+            player.handleProgressDrag(e);
+
+            // If it was playing before, attempt to resume with a slight delay
+            if (state.wasPlayingBeforeDrag) {
+                // Use setTimeout to allow state to settle after drag/currentTime updates
+                setTimeout(() => {
+                    // Double-check the element is actually paused and no error occurred
+                    if (elements.audioPlayer.paused && !state.hasError) {
+                        // console.log("Resuming playback after progress drag (via direct play).");
+                        const resumePromise = elements.audioPlayer.play();
+                        if (resumePromise !== undefined) {
+                            resumePromise.catch(error => {
+                                // console.error("Error resuming playback after drag:", error);
+                                if (error.name !== 'AbortError') {
+                                    player.handleAudioError(error, state.currentTrackIndex);
+                                }
+                                // Ensure UI reflects actual paused state if resume fails
+                                if (state.isPlaying) { // Check if state thinks it's playing
+                                     state.isPlaying = false; // Correct the state
+                                     player.updateButtonUI(false);
+                                     player.updateVisuals(false);
+                                }
+                            });
+                        }
+                    } else {
+                         // console.log("Audio not resuming: Already playing or error present.");
+                         // If it's somehow playing again already (e.g. very fast interaction), ensure animation starts
+                         if (state.isPlaying) {
+                             player.startProgressAnimation();
+                         }
+                    }
+                }, 10); // Small delay (10ms) seems sufficient usually
+            }
+            // Reset the flag regardless of whether play was attempted
+            state.wasPlayingBeforeDrag = false;
+        },
+        // --- END MODIFICATION ---
+
+        handleProgressDrag(e) { /* ... */
+             const { duration } = elements.audioPlayer;
+            if (!duration || isNaN(duration) || duration <= 0) return;
+            const rect = elements.progressContainer.getBoundingClientRect();
+            const { clientX } = utils.getEventCoords(e);
+            const clickX = clientX - rect.left;
+            const progress = Math.min(1, Math.max(0, clickX / rect.width));
+            // This directly sets the time, potentially triggering internal browser events
+            elements.audioPlayer.currentTime = progress * duration;
+            // Update visuals immediately during drag for responsiveness
+            elements.progressBar.style.width = `${progress * 100}%`;
+            elements.currentTimeDisplay.textContent = utils.formatTime(elements.audioPlayer.currentTime);
+            elements.progressContainer.setAttribute('aria-valuenow', Math.round(elements.audioPlayer.currentTime));
+            elements.progressContainer.setAttribute('aria-valuetext', `当前 ${utils.formatTime(elements.audioPlayer.currentTime)} / 总时长 ${utils.formatTime(duration)}`);
         }
-      }
     };
 
-    // 事件绑定
+    // --- Event Listener Setup ---
     const setupEventListeners = () => {
       elements.playPauseButton.addEventListener('click', player.togglePlayPause);
       elements.prevButton.addEventListener('click', player.playPrevTrack);
       elements.nextButton.addEventListener('click', player.playNextTrack);
 
-      elements.progressContainer.addEventListener('click', utils.throttle(player.handleProgressClick, 100));
+      // Progress Bar Interaction
+      elements.progressContainer.addEventListener('click', player.handleProgressClick);
+      elements.progressContainer.addEventListener('mousedown', player.handleProgressMouseDown);
+      elements.progressContainer.addEventListener('touchstart', player.handleProgressMouseDown, { passive: false });
 
-      // Tonearm Interaction (Mouse)
+      // Tonearm Interaction
       elements.tonearmBar.addEventListener('mousedown', player.handleTonearmMouseDown);
-      document.addEventListener('mousemove', player.handleTonearmMouseMove); // Listen on document for dragging outside
-      document.addEventListener('mouseup', player.handleTonearmMouseUp);     // Listen on document
+      elements.tonearmBar.addEventListener('touchstart', player.handleTonearmMouseDown, { passive: false });
 
-      // Tonearm Interaction (Touch - Basic Implementation)
-      // Note: Touch events might need more refinement for smooth experience (e.g., prevent page scroll)
-      elements.tonearmBar.addEventListener('touchstart', (e) => {
-          player.handleTonearmMouseDown(e.touches[0]); // Use first touch point
-          e.preventDefault(); // Often needed for touch drag
-      }, { passive: false });
+      // Document-level listeners for dragging
+      document.addEventListener('mousemove', (e) => {
+          player.handleProgressMouseMove(e); // Throttled
+          player.handleTonearmMouseMove(e); // Not throttled (usually smoother)
+      });
       document.addEventListener('touchmove', (e) => {
-          if (state.isDraggingTonearm) {
-              player.handleTonearmMouseMove(e.touches[0]);
-          }
+          if (state.isDraggingProgress) { player.handleProgressMouseMove(e); e.preventDefault(); }
+          if (state.isDraggingTonearm) { player.handleTonearmMouseMove(e); e.preventDefault(); }
+      }, { passive: false });
+      document.addEventListener('mouseup', (e) => {
+          player.handleProgressMouseUp(e);
+          player.handleTonearmMouseUp(e);
       });
       document.addEventListener('touchend', (e) => {
-          if (state.isDraggingTonearm) {
-              // Use changedTouches for touchend event
-              player.handleTonearmMouseUp(e.changedTouches[0]);
-          }
+          player.handleProgressMouseUp(e);
+          player.handleTonearmMouseUp(e);
+      });
+       document.addEventListener('touchcancel', (e) => {
+          player.handleProgressMouseUp(e);
+          player.handleTonearmMouseUp(e);
       });
 
-
       // Keyboard Controls
-      document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !['INPUT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement.tagName)) {
+      document.addEventListener('keydown', (e) => { /* ... */
+         const activeEl = document.activeElement;
+        const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'BUTTON' || activeEl.isContentEditable);
+        if (e.code === 'Space' && !isInputFocused) {
           e.preventDefault();
           player.togglePlayPause();
         }
-        // Add Left/Right arrow keys for seeking?
-        // Example:
-        // if (e.code === 'ArrowLeft' && !state.isLoading) {
-        //   elements.audioPlayer.currentTime = Math.max(0, elements.audioPlayer.currentTime - 5);
-        //   player.updateProgressBar();
-        // }
-        // if (e.code === 'ArrowRight' && !state.isLoading) {
-        //    elements.audioPlayer.currentTime = Math.min(elements.audioPlayer.duration || 0, elements.audioPlayer.currentTime + 5);
-        //    player.updateProgressBar();
-        // }
       });
 
-      // Audio Element Events
+      // --- Audio Element Events ---
       elements.audioPlayer.addEventListener('play', () => {
-        // Update UI only if not caused by seeking/internal changes
-        if (!state.isLoading) {
-          player.updateButtonUI(true);
-          player.updateVisuals(true);
-          player.startProgressAnimation();
-        }
+        state.isPlaying = true; // Update state FIRST
+        player.updateButtonUI(true);
+        player.updateVisuals(true);
+        player.startProgressAnimation();
+         if (state.isLoading) { player.setLoadingState(false); } // Hide loading if playing starts
       });
       elements.audioPlayer.addEventListener('pause', () => {
-        // Update UI only if not caused by seeking/internal changes or dragging
-         if (!state.isLoading && !state.isDraggingTonearm) {
-             player.updateButtonUI(false);
-             player.updateVisuals(false);
-             player.stopProgressAnimation();
-         }
+        state.isPlaying = false; // Update state FIRST
+        // Update UI only if not paused temporarily by drag start
+        if (!state.isDraggingProgress) {
+            player.updateButtonUI(false);
+            player.updateVisuals(false);
+            player.stopProgressAnimation();
+        }
       });
       elements.audioPlayer.addEventListener('ended', player.playNextTrack);
       elements.audioPlayer.addEventListener('timeupdate', () => {
-          // Only update progress via timeupdate if NOT dragging tonearm
-          if (!state.isDraggingTonearm) {
+          if (!state.isDraggingTonearm && !state.isDraggingProgress) {
               player.updateProgressBar();
           }
       });
       elements.audioPlayer.addEventListener('loadedmetadata', () => {
-        player.updateProgressBar(); // Update duration display
-        if (!state.hasError && !state.isLoading && !state.isEmpty) {
-          player.setControlsEnabled(true);
+        player.updateProgressBar();
+        player.setControlsEnabled(true);
+      });
+       elements.audioPlayer.addEventListener('waiting', () => {
+            if (state.isPlaying && !state.isLoading) { player.setLoadingState(true); }
+       });
+       elements.audioPlayer.addEventListener('playing', () => { // After waiting/seek resumes
+           if (state.isLoading) { player.setLoadingState(false); }
+           // Ensure state/UI matches if needed (e.g., if 'play' didn't fire)
+           if(!state.isPlaying) {
+                state.isPlaying = true;
+                player.updateButtonUI(true);
+                player.updateVisuals(true);
+           }
+           player.startProgressAnimation();
+       });
+
+      // Album Art Error Fallback
+      elements.albumArt.addEventListener('error', () => { /* ... */
+        if (elements.albumArt.src && !elements.albumArt.src.includes("placeholder.com")) {
+            elements.albumArt.src = "https://via.placeholder.com/200?text=No+Cover";
+            elements.albumArt.alt = "无法加载封面";
         }
       });
-
-      elements.audioPlayer.addEventListener('error', (e) => {
-        const error = elements.audioPlayer.error;
-        let message = "音频加载失败";
-        if (error) {
-          switch (error.code) {
-            case MediaError.MEDIA_ERR_ABORTED: message = "加载中止"; break; // Often happens on track change
-            case MediaError.MEDIA_ERR_NETWORK: message = "网络错误"; break;
-            case MediaError.MEDIA_ERR_DECODE: message = "解码错误"; break;
-            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: message = "格式不支持"; break;
-            default: message = `未知错误 (Code ${error.code})`;
-          }
-        }
-        // Avoid showing 'Aborted' error during normal track changes
-        if (error && error.code !== MediaError.MEDIA_ERR_ABORTED) {
-            player.setErrorState(true, message);
-        } else if (!error) {
-             player.setErrorState(true, message); // Show generic error if error object is null
-        }
-      });
-
-      elements.albumArt.addEventListener('error', () => {
-        elements.albumArt.src = "https://via.placeholder.com/200?text=No+Cover";
-        elements.albumArt.alt = "无法加载封面";
-      });
-
     };
 
-
-    // 初始化
+    // --- Initialization ---
     const init = () => {
       setupEventListeners();
-      player.setControlsEnabled(false); // Initially disabled until track loads
-
-      if (state.playlist.length === 0) {
-        player.setEmptyState(true);
-      } else {
-        player.loadTrack(0, false); // Load first track, don't autoplay
-      }
+      player.setControlsEnabled(false);
+      if (!state.playlist || state.playlist.length === 0) { player.setEmptyState(true); }
+      else { player.setEmptyState(false); player.loadTrack(0, false); }
     };
 
-    document.addEventListener('DOMContentLoaded', init);
+    // Run init once DOM is ready
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); }
+    else { init(); }
+
   </script>
 </body>
 </html>

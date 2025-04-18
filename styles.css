@@ -1,0 +1,384 @@
+/* ---------------------- 本地字体定义 (保持注释状态) ---------------------- */
+/* ... (font definitions remain the same) ... */
+
+/* ---------------------- 基础样式重置 ---------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  /* 添加系统默认字体作为后备 */
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.6;
+  background-color: var(--color-bg); color: var(--color-text);
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 50px 15px;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+/* ---------------------- CSS变量与全局主题 ---------------------- */
+:root {
+  /* Accessibility Note: Verify color contrast ratios for neumorphism elements meet WCAG AA standards. */
+  /* Especially check button backgrounds/shadows against body bg, and icon/text color against button bg. */
+  --color-bg: #f4f3f1; --color-text: #333; --color-secondary: #6a11cb;
+  --color-accent: #2575fc; --color-base: #e6e2dc; --color-record: #1a1a1a;
+  --color-record-groove: #3a3a3a; --color-error-bg: rgba(200, 50, 50, 0.85);
+  --color-error-text: #fff; --shadow-light: rgba(255, 255, 255, 0.8);
+  --shadow-dark: rgba(184, 181, 176, 0.6); --transition-fast: 0.3s ease;
+  --focus-outline-color: var(--color-accent);
+  --touch-target-min-height: 44px;
+  --progress-bar-height: 10px;
+  --progress-bar-height-mobile: 12px;
+  /* 诗歌字体，添加后备 */
+  --poetry-font: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  --poetry-bg: #f9f8f6;
+  --poetry-divider: #e0dcd7;
+  --poetry-accent: var(--color-accent);
+}
+
+/* ---------------------- 播放器容器 ---------------------- */
+.container {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Changed from 100vh to prevent potential issues on mobile */
+}
+.player-section { position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+/* ---------------------- 黑胶播放器主体 ---------------------- */
+.vinyl-player-wrapper { position: relative; width: 300px; height: 300px; margin-bottom: 2.5rem; max-width: 100%; }
+
+/* 播放器底座 */
+.player-base {
+  position: absolute; width: 100%; height: 100%; border-radius: 50%;
+  background: linear-gradient(145deg, var(--color-base), #ffffff);
+  /* Accessibility Note: Check contrast of base against background */
+  box-shadow: 5px 5px 15px var(--shadow-dark), -5px -5px 15px var(--shadow-light), inset 0 -3px 10px rgba(0, 0, 0, 0.05);
+  z-index: 0;
+}
+
+/* 黑胶唱片 */
+.record {
+  position: absolute; width: 95%; height: 95%; top: 2.5%; left: 2.5%; border-radius: 50%;
+  background-color: var(--color-record);
+  background-image: radial-gradient(circle at center, #333 10%, transparent 50%), repeating-radial-gradient(circle at center, var(--color-record), var(--color-record) 0.7px, var(--color-record-groove) 0.7px, var(--color-record-groove) 1.1px);
+  background-size: 100% 100%, 100% 100%;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex; justify-content: center; align-items: center; z-index: 2;
+  transition: box-shadow var(--transition-fast); will-change: transform; /* Added will-change (Tier 2 technically, but low cost) */ user-select: none; -webkit-user-drag: none;
+  animation: spin 4s linear infinite; animation-play-state: paused;
+}
+.record.playing { animation-play-state: running; box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5), inset 0 0 12px 2px rgba(30, 30, 30, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 255, 255, 0.08); }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* 唱片封面 */
+#album-art { width: 35%; height: 35%; border-radius: 50%; object-fit: cover; border: 5px solid #111; background-color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 4; position: relative; transition: transform var(--transition-fast); color: #aaa; font-size: 10px; text-align: center; line-height: 1.2; display: flex; justify-content: center; align-items: center; }
+.record.playing #album-art { transform: scale(1.03); }
+
+/* 唱臂 */
+.tonearm { position: absolute; top: calc(50% - 135px); right: calc(50% - 135px); width: 1px; height: 1px; z-index: 10; }
+.tonearm-rotator {
+  position: absolute; width: 180px; height: 20px; bottom: -10px; left: -10px;
+  transform-origin: 10px 10px; /* 旋转轴心 */
+  transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  z-index: 1;
+  transform: rotate(70deg); /* 初始角度由 JS 控制 */
+  will-change: transform; /* Added will-change */
+}
+.tonearm-bar {
+  position: absolute; top: 6px; left: 10px;
+  width: 175px; height: 8px;
+  background-color: #aaa; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  z-index: 10; cursor: pointer; will-change: transform; /* Added will-change */
+  position: relative;
+}
+/* Increase touch target size visually hidden */
+.tonearm-bar::after {
+  content: ''; position: absolute; top: 50%; left: -10px; right: -10px; /* Increased size */
+  height: var(--touch-target-min-height); transform: translateY(-50%);
+  /* background: rgba(255, 0, 0, 0.1); */ /* Uncomment to visualize */
+}
+
+/* 歌曲信息 */
+.song-info {
+  text-align: left;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  padding: 0 5px;
+}
+.song-info h2 { font-size: 1.2rem; font-weight: 500; color: var(--color-text); margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.song-info h4 { font-size: 0.9rem; font-weight: 400; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* 进度条 */
+.progress-container {
+  width: 100%;
+  height: var(--progress-bar-height);
+  background-color: #e0dcd7;
+  border-radius: calc(var(--progress-bar-height) / 2);
+  margin: 1rem 0;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden; /* Prevents bar overflowing rounded corners */
+}
+/* Increase touch target size visually hidden */
+.progress-container::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc((var(--progress-bar-height) - var(--touch-target-min-height)) / 2);
+  bottom: calc((var(--progress-bar-height) - var(--touch-target-min-height)) / 2);
+  z-index: 0; /* Below the progress bar */
+  /* background: rgba(0, 255, 0, 0.1); */ /* Uncomment to visualize */
+}
+.progress-bar {
+  height: 100%;
+  width: 0%; /* 由 JS 控制 */
+  background: linear-gradient(to right, var(--color-secondary), var(--color-accent));
+  border-radius: inherit; /* Inherit rounding from container */
+  transition: width 0.1s linear;
+  pointer-events: none; /* Prevent interaction */
+}
+
+/* 时间显示 */
+.time-display { display: flex; justify-content: space-between; width: 100%; padding: 0 0.5rem; font-size: 0.8rem; color: #666; margin-bottom: 1.5rem; }
+
+/* 控制按钮 */
+.controls {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; padding: 0 5px;
+}
+.control-group { display: flex; align-items: center; }
+.prev-next-group { gap: 15px; }
+.control-button {
+  background: linear-gradient(145deg, var(--color-base), #fff);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  transition: all 0.2s ease-out;
+  color: #555; /* Icon color - Accessibility Note: Check contrast against button bg */
+  display: flex; justify-content: center; align-items: center;
+  border-radius: 50%; /* Default to round */
+  touch-action: manipulation; /* Improve touch responsiveness */
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+}
+.prev-next-group .control-button { width: 48px; height: 48px; padding: 10px; }
+#play-pause-button { width: 110px; height: 48px; padding: 10px 15px; border-radius: 24px; /* Capsule shape */ }
+#add-local-button { width: 48px; height: 48px; padding: 10px; }
+
+.control-button:hover:not(:disabled) {
+  background: linear-gradient(145deg, #fff, var(--color-base));
+  color: #333; /* Icon hover color - Accessibility Note: Check contrast */
+  box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.control-button:active:not(:disabled), .control-button.playing:not(:disabled) {
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+  transform: translateY(1px);
+  color: #444; /* Active icon color - Accessibility Note: Check contrast */
+  border-color: rgba(0, 0, 0, 0.05);
+}
+/* Ensure focus state is clearly visible and meets contrast requirements */
+.control-button:focus-visible {
+  outline: 3px solid var(--focus-outline-color); /* Make outline more prominent */
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px var(--color-bg); /* Inner ring to help separate outline from button */
+}
+.control-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: 1px 1px 2px var(--shadow-dark), -1px -1px 2px var(--shadow-light);
+  background: var(--color-base);
+}
+
+/* SVG icons within buttons */
+.control-button svg {
+    width: 60%;
+    height: 60%;
+    display: block;
+    fill: currentColor; /* Inherit button's color */
+    pointer-events: none; /* Prevent icon interfering with click */
+}
+
+/* 加载与错误 */
+.loading-indicator, .error-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; display: none; }
+.loading-indicator { width: 30px; height: 30px; border: 3px solid rgba(0, 0, 0, 0.2); border-radius: 50%; border-top-color: #666; animation: spin 1s ease-in-out infinite; }
+.error-message { background-color: var(--color-error-bg); color: var(--color-error-text); padding: 10px 15px; border-radius: 5px; font-size: 0.9rem; text-align: center; max-width: 85%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+.vinyl-player-wrapper.loading .loading-indicator { display: block; }
+.vinyl-player-wrapper.error .error-message { display: block; }
+.vinyl-player-wrapper.empty .error-message { display: block; } /* Show error message when empty too */
+
+/* 诗歌区域 */
+.poetry-section {
+  margin-top: 2.5rem;
+  width: 100%;
+  position: relative;
+  flex: 1; /* Allow card to fill remaining space if container has height */
+  display: flex;
+  flex-direction: column;
+}
+.poetry-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+.poetry-title {
+  font-family: var(--poetry-font);
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--color-text);
+  padding-left: 15px; /* Adjust if needed */
+  margin-right: 12px; /* Ensure space before line */
+  flex-shrink: 0; /* Prevent title from shrinking */
+}
+.poetry-line {
+  flex-grow: 1;
+  height: 1px;
+  background-color: var(--poetry-divider);
+}
+.poetry-card {
+  flex: 1; /* Allow card to grow */
+  background: var(--poetry-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 5px 5px 15px var(--shadow-dark), -5px -5px 15px var(--shadow-light);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.poetry-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 7px 7px 20px var(--shadow-dark), -7px -7px 20px var(--shadow-light);
+}
+.poem-title {
+  font-family: var(--poetry-font);
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline; /* Align baseline for better text flow */
+  gap: 10px; /* Add gap between title and author */
+}
+.poem-author {
+  font-size: 0.8rem;
+  color: #777;
+  font-style: italic;
+  white-space: nowrap; /* Prevent author wrapping awkwardly */
+}
+.poem-content {
+  font-family: var(--poetry-font);
+  line-height: 1.8;
+  white-space: pre-line; /* Preserve line breaks */
+  color: #444;
+  /* Accessibility Note: Ensure adequate contrast for poem text */
+}
+.poem-meta {
+  display: flex;
+  /* justify-content: space-between; */ /* Allow natural spacing */
+  align-items: center;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: #888;
+  flex-wrap: wrap; /* Allow wrapping if needed */
+  gap: 8px; /* Space between items */
+}
+.poem-date {
+  font-style: italic;
+}
+/* CSS controls visibility now based on whether sibling elements have content */
+.meta-divider {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  background-color: #ccc;
+  border-radius: 50%;
+  margin: 0 4px; /* Reduced margin slightly */
+  vertical-align: middle;
+}
+/* Hide divider if date or location is empty (handled by JS adding/removing content) */
+.poem-meta > span:empty { display: none; }
+.poem-meta > span:empty + .meta-divider { display: none; }
+.poem-meta > .meta-divider:has(+ span:empty) { display: none; } /* Needs browser support for :has() */
+/* Fallback: JS can add/remove a class to hide divider */
+.meta-divider.hidden { display: none; }
+
+.poem-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+}
+.poem-tag {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  background-color: rgba(37, 117, 252, 0.1);
+  color: var(--color-accent);
+  border-radius: 20px;
+}
+
+/* 响应式适配 */
+@media (max-width: 480px) {
+  body { padding: 30px 10px; }
+  .vinyl-player-wrapper { width: 260px; height: 260px; margin-bottom: 2rem; }
+  .tonearm { top: calc(50% - 120px); right: calc(50% - 120px); }
+  .tonearm-rotator { width: 150px; height: 16px; bottom: -8px; left: -8px; transform-origin: 8px 8px; }
+  .tonearm-bar { width: 140px; left: 8px; top: 4px; height: 6px; border-radius: 3px; }
+  .tonearm-bar::after { height: var(--touch-target-min-height); }
+
+  .song-info { padding: 0 5px; }
+  .song-info h2 { font-size: 1.1rem; }
+  .song-info h4 { font-size: 0.85rem; }
+  .progress-container { height: var(--progress-bar-height-mobile); margin: 1.5rem 0; }
+  /* Adjust touch target size for mobile progress bar */
+  .progress-container::before { top: calc((var(--progress-bar-height-mobile) - var(--touch-target-min-height)) / 2); bottom: calc((var(--progress-bar-height-mobile) - var(--touch-target-min-height)) / 2); }
+  .controls { margin-top: 1.5rem; }
+  .prev-next-group { gap: 10px; }
+  .prev-next-group .control-button { width: 42px; height: 42px; padding: 8px; }
+  #play-pause-button { width: 95px; height: 42px; padding: 8px 12px; border-radius: 21px; }
+  #add-local-button { width: 42px; height: 42px; padding: 8px; }
+
+  .poetry-section { margin-top: 2rem; }
+  .poetry-title { font-size: 1.3rem; }
+  .poetry-card { padding: 1.2rem; }
+  .poem-title { font-size: 1.1rem; }
+  .poem-content { font-size: 0.95rem; }
+}
+
+@media (max-width: 360px) {
+  .vinyl-player-wrapper { width: 220px; height: 220px; }
+  .tonearm { top: calc(50% - 105px); right: calc(50% - 105px); }
+  .tonearm-rotator { width: 125px; height: 14px; bottom: -7px; left: -7px; transform-origin: 7px 7px; }
+  .tonearm-bar { width: 115px; left: 7px; top: 4px; height: 6px; border-radius: 3px; }
+  .tonearm-bar::after { height: var(--touch-target-min-height); }
+
+  .song-info { padding: 0; }
+  .controls { padding: 0; margin-top: 1.2rem; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .play-group { order: 1; }
+  .prev-next-group { order: 2; gap: 8px; justify-content: center; width: 100%;}
+  .progress-container { margin: 1.2rem 0; }
+  .prev-next-group .control-button { width: 40px; height: 40px; padding: 8px; }
+  #play-pause-button { width: 90px; height: 40px; padding: 8px 10px; border-radius: 20px; }
+  #add-local-button { width: 40px; height: 40px; padding: 8px; }
+
+  .poetry-section { margin-top: 1.8rem; }
+  .poetry-title { font-size: 1.2rem; padding-left: 12px; }
+  .poetry-card { padding: 1rem; }
+  .poem-title { font-size: 1rem; margin-bottom: 0.6rem; }
+  .poem-content { font-size: 0.9rem; line-height: 1.7; }
+  .poem-meta { margin-top: 0.8rem; }
+  .poem-tags { gap: 6px; margin-top: 0.6rem; }
+}
+
+/* Style for initialization error message placeholder */
+.init-error-message {
+    color: #c00;
+    background-color: #fdd;
+    border: 1px solid #c00;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+}
